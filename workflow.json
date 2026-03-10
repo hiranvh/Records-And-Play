@@ -1,0 +1,26 @@
+{
+    "url": "https://practicetestautomation.com/practice-test-login/",
+    "steps": [
+        {
+            "type": "input",
+            "tag": "INPUT",
+            "id": "username",
+            "name": "username",
+            "label": "Username",
+            "value": "student"
+        },
+        {
+            "type": "input",
+            "tag": "INPUT",
+            "id": "password",
+            "name": "password",
+            "label": "Password",
+            "value": "Password123"
+        },
+        {
+            "type": "click",
+            "tag": "BUTTON",
+            "text": "Submit"
+        }
+    ]
+}

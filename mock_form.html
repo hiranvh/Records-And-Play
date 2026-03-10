@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Enrollment Mock</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; padding: 20px; }
+        .form-container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 4px 6px rgba(0,0,0,0.1); }
+        h2 { text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #218838; }
+        #success-msg { display: none; color: green; font-weight: bold; text-align: center; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Customer Enrollment</h2>
+        <form id="enrollment-form">
+            <div class="form-group">
+                <label for="first-name">First Name</label>
+                <input type="text" id="first-name" name="first-name" required>
+            </div>
+            <div class="form-group">
+                <label for="last-name">Last Name</label>
+                <input type="text" id="last-name" name="last-name" required>
+            </div>
+            <div class="form-group">
+                <label for="ssn">SSN</label>
+                <input type="text" id="ssn" name="ssn" required>
+            </div>
+            <button type="submit">Submit Enrollment</button>
+        </form>
+        <div id="success-msg">Enrollment Successful!</div>
+    </div>
+
+    <script>
+        document.getElementById("enrollment-form").addEventListener("submit", async function(event) {
+            event.preventDefault(); // Prevent page reload
+            
+            const firstName = document.getElementById("first-name").value;
+            const lastName = document.getElementById("last-name").value;
+            const ssn = document.getElementById("ssn").value;
+
+            // In a real scenario, this would post to an API.
+            // For the mock, we simulate it by calling a Python endpoint or just showing success.
+            // We will actually have our Web Automation trigger a python backend call by running a flask app, 
+            // OR we can just test the DB directly by adding it to the DB from our python bot logic.
+            // Let's actually post to a local mock server! Let's update `mock_server.py`.
+
+            try {
+                const response = await fetch('http://localhost:5000/enroll', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ first_name: firstName, last_name: lastName, ssn: ssn })
+                });
+                
+                if(response.ok) {
+                    document.getElementById("enrollment-form").style.display = "none";
+                    document.getElementById("success-msg").style.display = "block";
+                } else {
+                    alert("Error enrolling customer");
+                }
+            } catch(e) {
+                // fallback for testing locally without server running
+                document.getElementById("enrollment-form").style.display = "none";
+                document.getElementById("success-msg").style.display = "block";
+                document.getElementById("success-msg").innerText = "Success (Mock Mode)";
+            }
+        });
+    </script>
+</body>
+</html>
