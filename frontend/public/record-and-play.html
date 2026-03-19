@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automation Framework Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/4.24.15/antd.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 256px;
+            background: #001529;
+            color: white;
+            padding: 24px 0;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar-menu li {
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .sidebar-menu li:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .sidebar-menu li.active {
+            background: #1890ff;
+        }
+        .main-content {
+            flex: 1;
+            padding: 24px;
+            background: #f0f2f5;
+        }
+        .header {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .recording-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ff4d4f;
+            margin-right: 8px;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            margin-right: 8px;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #1890ff;
+            color: white;
+        }
+        .btn-danger {
+            background: #ff4d4f;
+            color: white;
+        }
+        .btn-default {
+            background: #fff;
+            border: 1px solid #d9d9d9;
+            color: rgba(0, 0, 0, 0.85);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        .flow-item {
+            border-bottom: 1px solid #eee;
+            padding: 16px 0;
+        }
+        .flow-item:last-child {
+            border-bottom: none;
+        }
+        .flow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .flow-title {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .flow-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .tag-green {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        .tag-blue {
+            background: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <h2 style="color: white; text-align: center; margin-bottom: 32px;">Automation Framework</h2>
+            <ul class="sidebar-menu">
+                <li class="active">Dashboard</li>
+                <li>Recording</li>
+                <li>Flow Management</li>
+                <li>Playback Control</li>
+                <li>AI Data Generation</li>
+                <li>Configuration</li>
+            </ul>
+        </div>
+        <div class="main-content">
+            <div class="header">
+                <h1>Automation Dashboard</h1>
+                <p>Manage your recording and playback automation workflows</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Flows</div>
+                    <div class="stat-number">12</div>
+                    <div class="stat-sub">+2 from last week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Sessions</div>
+                    <div class="stat-number">3</div>
+                    <div class="stat-sub">Currently recording</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Successful Tests</div>
+                    <div class="stat-number" style="color: #52c41a;">98%</div>
+                    <div class="stat-sub">Last 24 hours</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Failed Tests</div>
+                    <div class="stat-number" style="color: #ff4d4f;">2%</div>
+                    <div class="stat-sub">Requires attention</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Recording Session</h2>
+                <div style="display: flex; align-items: center; margin: 24px 0;">
+                    <input type="text" placeholder="Enter session name" style="flex: 1; padding: 8px; border: 1px solid #d9d9d9; border-radius: 4px; margin-right: 16px;">
+                    <button class="btn btn-primary">
+                        <span class="recording-indicator"></span>
+                        Start Recording
+                    </button>
+                    <button class="btn btn-default">Stop Recording</button>
+                </div>
+                <div style="background: #f9f9f9; padding: 16px; border-radius: 4px;">
+                    <strong>Current Session:</strong> Not recording
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h2>Recent Flows</h2>
+                    <a href="#" style="color: #1890ff;">View All</a>
+                </div>
+                <div class="flow-item">
+                    <div class="flow-header">
+                        <div class="flow-title">Login Flow</div>
+                        <div class="flow-actions">
+                            <button class="btn btn-default" style="padding: 4px 8px; font-size: 12px;">View</button>
+                            <button class="btn btn-default" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+                            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 16px; font-size: 14px;">
+                        <span><span class="tag tag-green">Active</span></span>
+                        <span>5 steps</span>
+                        <span>Created: 2026-03-18</span>
+                        <span>Modified: 2026-03-18</span>
+                    </div>
+                </div>
+                <div class="flow-item">
+                    <div class="flow-header">
+                        <div class="flow-title">Registration Flow</div>
+                        <div class="flow-actions">
+                            <button class="btn btn-default" style="padding: 4px 8px; font-size: 12px;">View</button>
+                            <button class="btn btn-default" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+                            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 16px; font-size: 14px;">
+                        <span><span class="tag tag-blue">Inactive</span></span>
+                        <span>12 steps</span>
+                        <span>Created: 2026-03-17</span>
+                        <span>Modified: 2026-03-17</span>
+                    </div>
+                </div>
+                <div class="flow-item">
+                    <div class="flow-header">
+                        <div class="flow-title">Profile Update Flow</div>
+                        <div class="flow-actions">
+                            <button class="btn btn-default" style="padding: 4px 8px; font-size: 12px;">View</button>
+                            <button class="btn btn-default" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+                            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;">Delete</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 16px; font-size: 14px;">
+                        <span><span class="tag tag-green">Active</span></span>
+                        <span>8 steps</span>
+                        <span>Created: 2026-03-16</span>
+                        <span>Modified: 2026-03-16</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple interactivity for demonstration
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuItems = document.querySelectorAll('.sidebar-menu li');
+            menuItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    menuItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Recording button functionality
+            const startBtn = document.querySelector('.btn-primary');
+            const stopBtn = document.querySelector('.btn-default:not(.flow-actions button)');
+            const recordingIndicator = document.querySelector('.recording-indicator');
+
+            if (startBtn) {
+                startBtn.addEventListener('click', function() {
+                    if (recordingIndicator) {
+                        startBtn.innerHTML = '<span class="recording-indicator"></span>Recording... (00:05)';
+                    }
+                    if (stopBtn) stopBtn.disabled = false;
+                    startBtn.disabled = true;
+                });
+            }
+
+            if (stopBtn) {
+                stopBtn.addEventListener('click', function() {
+                    if (startBtn) {
+                        startBtn.innerHTML = '<span class="recording-indicator"></span>Start Recording';
+                        startBtn.disabled = false;
+                    }
+                    stopBtn.disabled = true;
+                });
+            }
+
+            // Flow action buttons functionality
+            document.querySelectorAll('.flow-actions').forEach(actions => {
+                const buttons = actions.querySelectorAll('button');
+                const flowTitle = actions.closest('.flow-item').querySelector('.flow-title').innerText;
+                
+                // View button
+                buttons[0].addEventListener('click', function() {
+                    alert('Viewing details for ' + flowTitle + ':\nThis flow is currently active with simulated steps.');
+                });
+                
+                // Edit button
+                buttons[1].addEventListener('click', function() {
+                    const newTitle = prompt('Edit title for ' + flowTitle + ':', flowTitle);
+                    if (newTitle) {
+                        actions.closest('.flow-item').querySelector('.flow-title').innerText = newTitle;
+                    }
+                });
+                
+                // Delete button
+                buttons[2].addEventListener('click', function() {
+                    if (confirm('Are you sure you want to delete ' + flowTitle + '?')) {
+                        actions.closest('.flow-item').remove();
+                        // Update total flows count
+                        const statNumber = document.querySelector('.stat-card .stat-number');
+                        if (statNumber) {
+                            let count = parseInt(statNumber.innerText);
+                            if (!isNaN(count) && count > 0) {
+                                statNumber.innerText = count - 1;
+                            }
+                        }
+                    }
+                });
+            });
+
+            // View All link
+            const viewAllLink = document.querySelector('a[href="#"]');
+            if (viewAllLink) {
+                viewAllLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    alert('All flows are currently displayed.');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
