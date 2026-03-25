@@ -4,6 +4,8 @@ import time
 import threading
 import random
 import re
+import uuid
+import pandas as pd
 from datetime import date, datetime, timedelta
 
 from selenium import webdriver
@@ -26,6 +28,38 @@ ZIP_LOCATION_DATA = {
         "state": "MD",
     }
 }
+
+def _log_execution_to_excel(workflow_name, success, screenshot_path, data):
+    try:
+        reports_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports")
+        os.makedirs(reports_dir, exist_ok=True)
+        report_file = os.path.join(reports_dir, "execution_report.xlsx")
+        
+        new_uuid = str(uuid.uuid4())[:12]
+        row = {
+            "Run ID": new_uuid,
+            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Workflow": workflow_name,
+            "Status": "Success" if success else "False",
+            "Screenshot": screenshot_path
+        }
+        for k, v in data.items():
+            row[k] = v
+            
+        df_new = pd.DataFrame([row])
+        if os.path.exists(report_file):
+            try:
+                df_existing = pd.read_excel(report_file)
+                df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+                df_combined.to_excel(report_file, index=False, engine="openpyxl")
+            except Exception:
+                df_new.to_excel(report_file, index=False, engine="openpyxl")
+        else:
+            df_new.to_excel(report_file, index=False, engine="openpyxl")
+            
+        print(f"Successfully appended execution data to Excel report (.xlsx) at: {report_file}")
+    except Exception as e:
+        print(f"Failed to log execution to Excel report (.xlsx format): {e}")
 
 try:
     from faker import Faker
@@ -75,7 +109,6 @@ def _create_webdriver(headless=False):
     """
     chrome_options = Options()
     if headless:
-        # Use the new headless mode where available.
         chrome_options.add_argument("--headless=new")
         chrome_options.add_argument("--window-size=1920,1080")
     else:
@@ -89,6 +122,25 @@ def _create_webdriver(headless=False):
         except Exception:
             pass
     return driver
+
+
+def _save_full_page_screenshot(driver, screenshot_path):
+    try:
+        total_width = driver.execute_script(
+            "return Math.max(document.body.scrollWidth, document.documentElement.scrollWidth);"
+        )
+        total_height = driver.execute_script(
+            "return Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);"
+        )
+        if total_width and total_height:
+            driver.set_window_size(total_width, total_height)
+            time.sleep(0.5)
+        driver.save_screenshot(screenshot_path)
+    except Exception:
+        try:
+            driver.save_screenshot(screenshot_path)
+        except Exception:
+            pass
 
 
 def _wait_for_page_ready(driver, timeout=30):
@@ -573,9 +625,14 @@ def _generate_ssn():
         area = int(candidate[0:3])
         group = int(candidate[3:5])
         serial = int(candidate[5:9])
-
+        
+        # Checking against explicit invalid SSN patterns
+        # Invalid: 987-65-432x, 666-xx-xxxx, 000-xx-xxxx, 9xx-xx-xxxx
         if area == 0 or area == 666 or area >= 900:
             return False
+        if area == 987 and group == 65 and candidate[5:8] == "432":
+            return False
+
         if group == 0 or serial == 0:
             return False
         return True
@@ -2430,7 +2487,7 @@ def run_execution_mode(url=None, override_data=None, headless=False, workflow_na
     timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     screenshot_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "reports",
+        "Screenshots",
         f"success_{timestamp_str}.png",
     )
     os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
@@ -2561,11 +2618,34 @@ def run_execution_mode(url=None, override_data=None, headless=False, workflow_na
                         continue
 
                 if not str(val_to_use).strip():
-                    print(
-                        f"Skipping empty recorded input/select step with no override: {step}"
-                    )
-                    previous_step_was_date_related = current_step_is_date_related
-                    continue
+                    field_name = label or name or id_attr or aria_label or placeholder or "Unknown Field"
+                    print(f"Agent got stuck. Missing data for '{field_name}'. Prompting user...")
+                    
+                    user_input = None
+                    try:
+                        import tkinter as tk
+                        from tkinter import simpledialog
+                        root = tk.Tk()
+                        root.withdraw()
+                        root.attributes('-topmost', True)
+                        user_input = simpledialog.askstring(
+                            "Data Required (Agent Stuck)", 
+                            f"The Agent needs data for field: '{field_name}'\n\nPlease provide the value to continue, or leave empty to skip:", 
+                            parent=root
+                        )
+                        root.destroy()
+                    except Exception as e:
+                        print(f"Failed to show UI prompt: {e}")
+                        
+                    if user_input is not None and user_input.strip():
+                        val_to_use = str(user_input.strip())
+                        print(f"User provided value: {val_to_use}")
+                    else:
+                        print(
+                            f"Skipping empty recorded input/select step with no override: {step}"
+                        )
+                        previous_step_was_date_related = current_step_is_date_related
+                        continue
 
                 if step["type"] == "select" and current_step_is_date_related:
                     success = _handle_datepicker_select(driver, step, val_to_use)
@@ -2595,7 +2675,7 @@ def run_execution_mode(url=None, override_data=None, headless=False, workflow_na
                         step.get("text", ""),
                     )
 
-                for _ in range(30):
+                for _ in range(100):
                     for strategy in strategies:
                         elements = _find_elements_for_strategy(driver, strategy)
                         if not elements:
@@ -2634,7 +2714,7 @@ def run_execution_mode(url=None, override_data=None, headless=False, workflow_na
                                         if any(
                                             token in combined for token in ["zip", "postal", "postcode"]
                                         ):
-                                            time.sleep(3.0)
+                                            time.sleep(1.5)
                                             try:
                                                 _wait_for_page_ready(driver, timeout=5)
                                             except Exception:
@@ -2651,7 +2731,7 @@ def run_execution_mode(url=None, override_data=None, headless=False, workflow_na
                                 completed_replay_targets.add(replay_target_key)
                             combined_check = f"{label.lower()} {name.lower()} {id_attr.lower()}"
                             if profile_field == "effective_date" or "effectivedate" in combined_check:
-                                time.sleep(4.0)
+                                time.sleep(0.5)
                                 try:
                                     _wait_for_page_ready(driver, timeout=8)
                                 except Exception:
@@ -2660,16 +2740,16 @@ def run_execution_mode(url=None, override_data=None, headless=False, workflow_na
                                 token in combined_check
                                 for token in ["county", "city", "state", "subgroup", "billing", "class"]
                             ):
-                                time.sleep(3.5)
+                                time.sleep(1.0)
                                 try:
                                     _wait_for_page_ready(driver, timeout=5)
                                 except Exception:
                                     pass
-                                # Specifically for city/county, wait an extra moment for dependent dropdowns
-                                if "county" in combined_check or "state" in combined_check:
-                                    time.sleep(4.0)
+                                # Specifically for city/county/state, wait an extra moment for dependent dropdowns
+                                if any(token in combined_check for token in ["county", "city", "state"]):
+                                    time.sleep(2.5)
                             if "ssn" in combined_check or "mask" in combined_check:
-                                time.sleep(3.0)
+                                time.sleep(0.5)
                                 try:
                                     _wait_for_page_ready(driver, timeout=5)
                                 except Exception:
@@ -2678,7 +2758,7 @@ def run_execution_mode(url=None, override_data=None, headless=False, workflow_na
                     if success:
                         # Break out of `for _ in range(10):` loop
                         break
-                    time.sleep(0.5)
+                    time.sleep(0.15)
                     
                 if not success:
                     print(
@@ -2844,7 +2924,7 @@ def run_execution_mode(url=None, override_data=None, headless=False, workflow_na
                             token in chosen_container_id.lower()
                             for token in ["county", "city", "state"]
                         ):
-                            time.sleep(1.5)
+                            time.sleep(2.5)
                             try:
                                 _wait_for_page_ready(driver, timeout=5)
                             except Exception:
@@ -2852,7 +2932,7 @@ def run_execution_mode(url=None, override_data=None, headless=False, workflow_na
 
                 if success:
                     previous_step_was_date_related = current_step_is_date_related
-                    time.sleep(1.5 if current_step_is_date_related else 1.0)
+                    time.sleep(0.2 if current_step_is_date_related else 0.1)
                     continue
 
                 if _click_close_action(driver, step):
@@ -2892,7 +2972,7 @@ def run_execution_mode(url=None, override_data=None, headless=False, workflow_na
                             )
                     print(f"Successfully clicked element '{text or id_attr or name}'")
                     previous_step_was_date_related = current_step_is_date_related
-                    time.sleep(1.5 if current_step_is_date_related else 1.0)
+                    time.sleep(0.2 if current_step_is_date_related else 0.1)
                     continue
 
                 strategies = _build_click_locators(step, include_structural_fallback=not overridden)
@@ -2983,14 +3063,40 @@ def run_execution_mode(url=None, override_data=None, headless=False, workflow_na
             previous_step_was_date_related = current_step_is_date_related
 
         time.sleep(2.0)
-        driver.save_screenshot(screenshot_path)
+        
+        # Scrape final screen data
+        try:
+            body_text = driver.find_element(By.TAG_NAME, "body").text
+            
+            # Identify customer number (Customer Number:, Customer #, Member ID, etc.)
+            cust_match = re.search(r'(?i)(?:customer\s*number|customer\s*#|member\s*id|id\s*number)\s*[:#\-]?\s*([A-Z0-9\-]{5,15})', body_text)
+            if cust_match:
+                effective_data['Customer Number'] = cust_match.group(1).strip()
+                
+            plans_found = []
+            for line in body_text.split('\n'):
+                lower_line = line.lower()
+                if '$' in line and any(p in lower_line for p in ['medical', 'dental', 'vision', 'life', 'plan']):
+                    plans_found.append(" ".join(line.split()))
+            
+            if plans_found:
+                effective_data['Plan Details'] = " | ".join(plans_found)
+        except Exception:
+            pass
+
+        _save_full_page_screenshot(driver, screenshot_path)
+        
+        screenshot_name = os.path.basename(screenshot_path) if screenshot_path else ""
+        _log_execution_to_excel(workflow_name, True, screenshot_name, effective_data)
+        
         return True, "Execution complete", screenshot_path, effective_data
 
     except Exception as e:
-        try:
-            driver.save_screenshot(screenshot_path)
-        except Exception:
-            pass
+        _save_full_page_screenshot(driver, screenshot_path)
+        
+        screenshot_name = os.path.basename(screenshot_path) if screenshot_path else ""
+        _log_execution_to_excel(workflow_name, False, screenshot_name, effective_data)
+        
         return False, f"Execution failed: {str(e)}", screenshot_path, effective_data
     finally:
         try:

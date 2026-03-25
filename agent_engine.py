@@ -7,6 +7,13 @@ import models_manager
 import web_core
 import verification
 
+try:
+    from langchain_core.prompts import PromptTemplate
+    from langchain_core.output_parsers import PydanticOutputParser
+    LANGCHAIN_AVAILABLE = True
+except ImportError:
+    LANGCHAIN_AVAILABLE = False
+
 class ActionIntent(BaseModel):
     action: str = Field(description="The automation action to perform (e.g., 'create_enrollment')")
     count: int = Field(description="Number of times to repeat the action. Default to 1.", default=1)
@@ -56,28 +63,67 @@ class AgentEngine:
             if self.llm is not None:
                 return
 
-            try:
-                from llama_cpp import Llama
-            except ModuleNotFoundError as exc:
-                raise RuntimeError(
-                    "llama-cpp-python is not installed. Install it with a prebuilt wheel or add Visual C++ build tools before using the agent model."
-                ) from exc
+            if LANGCHAIN_AVAILABLE:
+                try:
+                    from langchain_community.llms import LlamaCpp
+                except ModuleNotFoundError as exc:
+                    raise RuntimeError(
+                        "langchain-community or llama-cpp-python is not installed."
+                    ) from exc
 
-            cpu_count = os.cpu_count() or 4
-            thread_count = max(2, min(8, cpu_count - 1))
+                cpu_count = os.cpu_count() or 4
+                thread_count = max(2, min(8, cpu_count - 1))
 
-            self._log("Checking/downloading Phi-3.5 model...")
-            models_manager.ensure_model_exists(progress_callback=self._download_progress)
-            model_path = models_manager.get_model_path()
-            self._log(f"Loading model into memory using {thread_count} CPU threads...")
-            self.llm = Llama(
-                model_path=model_path,
-                n_ctx=1024,
-                n_batch=256,
-                n_threads=thread_count,
-                verbose=False,
-            )
-            self._log("Model ready.")
+                self._log("Checking/downloading Phi-3.5 model...")
+                models_manager.ensure_model_exists(progress_callback=self._download_progress)
+                
+                # Since models_manager might return differently, let's get the standard path
+                # Need to get model_path. Previously it used models_manager.get_model_path()
+                # Let's ensure models_manager.MODEL_PATH is used or get_model_path if exists.
+                try:
+                    model_path = models_manager.get_model_path()
+                except AttributeError:
+                    model_path = models_manager.MODEL_PATH
+
+                self._log(f"Loading model into memory using {thread_count} threads via Langchain (GPU layers enabled if available)...")
+                self.llm = LlamaCpp(
+                    model_path=model_path,
+                    n_ctx=2048, # Increased context to maximize Phi-3 potential
+                    n_batch=256,
+                    n_gpu_layers=-1,
+                    n_threads=thread_count,
+                    temperature=0.0,
+                    top_p=0.1,
+                    repeat_penalty=1.1,
+                    stop=["<|end|>", "<|user|>"],
+                    verbose=False,
+                )
+                self._log("Model ready.")
+            else:
+                # Fallback to direct llama_cpp
+                try:
+                    from llama_cpp import Llama
+                except ModuleNotFoundError as exc:
+                    raise RuntimeError(
+                        "llama-cpp-python is not installed. Install it with a prebuilt wheel or add Visual C++ build tools before using the agent model."
+                    ) from exc
+
+                cpu_count = os.cpu_count() or 4
+                thread_count = max(2, min(8, cpu_count - 1))
+
+                self._log("Checking/downloading Phi-3.5 model...")
+                models_manager.ensure_model_exists(progress_callback=self._download_progress)
+                model_path = models_manager.get_model_path()
+                self._log(f"Loading model into memory using {thread_count} threads (GPU layers enabled if available)...")
+                self.llm = Llama(
+                    model_path=model_path,
+                    n_ctx=1024,
+                    n_batch=256,
+                    n_gpu_layers=-1,
+                    n_threads=thread_count,
+                    verbose=False,
+                )
+                self._log("Model ready.")
 
     def _download_progress(self, current, total):
         pct = (current / total) * 100
@@ -208,7 +254,7 @@ class AgentEngine:
     def coordinator_agent(self, user_command, workflow_fields=None):
         """
         The Coordinator parsing an unstructured natural language command.
-        Uses Phi-3.5 with strict instruction formatting to output JSON.
+        Uses Phi-3.5 with strict instruction formatting to output JSON via LangChain if available.
         """
         self._log("Coordinator Agent: Parsing complex command with constrained JSON output...")
 
@@ -223,6 +269,53 @@ Prefer the closest matching field name from the list.
 Do not invent new fields or generate fake values for unspecified fields.
 """
 
+        if LANGCHAIN_AVAILABLE:
+            parser = PydanticOutputParser(pydantic_object=ActionIntent)
+            format_instructions = parser.get_format_instructions()
+
+            template = f"""<|system|>
+You are the Coordinator Agent. Your job is to parse the user's request into a reliable format.
+Extract only the requested action, repetition count, and explicit values provided by the user.
+If the user tells you to use a specific name or link INSTEAD of a previously recorded one, output the OLD name as the key and the NEW name as the value inside extracted_data.
+{fields_instruction}
+Rules:
+- extracted_data must contain only explicit user constraints or replacement mappings from the user command.
+- Never generate fake names, dates, SSNs, addresses, or any other filler values.
+- If the user only asks for a count or a generic run, return extracted_data as [].
+- Keep action as "run_workflow" unless the user clearly requests otherwise.
+
+{{format_instructions}}
+
+<|user|>
+User Command: "{{user_command}}"
+<|assistant|>
+"""
+            prompt_template = PromptTemplate(
+                template=template,
+                input_variables=["user_command"],
+                partial_variables={"format_instructions": format_instructions}
+            )
+
+            with self._inference_lock:
+                prompt_text = prompt_template.format(user_command=user_command)
+                response = self.llm.invoke(prompt_text)
+
+            output_text = response.strip()
+
+            try:
+                intent = parser.parse(output_text)
+                self._log(
+                    f"Coordinator parsed intent: Action='{intent.action}', Count={intent.count}, Records={len(intent.extracted_data)}"
+                )
+                return intent
+            except Exception as exc:
+                self._log(f"LangChain parser failed, attempting manual fallback extraction...")
+                # Fallback to manual parsing
+        else:
+            # Fallback to original method if LangChain not available
+            pass
+
+        # Manual parsing fallback
         prompt = f"""<|system|>
 You are the Coordinator Agent. Your job is to parse the user's request into a reliable JSON format.
 Extract only the requested action, repetition count, and explicit values provided by the user.

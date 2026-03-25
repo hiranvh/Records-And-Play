@@ -41,3 +41,8 @@ Optimization: Designed to run on 8GB RAM and Intel i5 hardware.
 Model: Phi-3.5 Mini (Local GGUF).
 
 Security: The Python code is compiled into a protected binary (using Nuitka) to prevent local modification of the execution logic.
+
+To Run the Application
+ .\.venv\Scripts\Activate.ps1
+ then
+ python main.py

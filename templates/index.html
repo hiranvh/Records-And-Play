@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Commander</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome for better visibility -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff; /* pure white */
+            color: #111827; /* Gray 900 */
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Visible scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f3f4f6; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .app-border { border-color: #d1d5db; /* Gray 300 */ }
+        
+        .box-panel {
+            background-color: #fdfbf7 !important; /* Cream background instead of white */
+            border: 1px solid #d1d5db;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        .bg-input { 
+            background-color: #f1f5f9; /* Slate 100 */
+            border: 2px solid #cbd5e1; /* Slate 300 */
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.2s; 
+        }
+        .bg-input:focus-within { 
+            border-color: #3b82f6; /* Blue 500 */
+            background-color: #ffffff;
+            outline: none; 
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02), 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Solid Color Buttons */
+        .btn-solid {
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-solid:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
+        .btn-solid:active { transform: translateY(0); }
+
+        .btn-blue { background-color: #2563eb; } /* Blue 600 */
+        .btn-blue:hover { background-color: #1d4ed8; } /* Blue 700 */
+
+        .btn-green { background-color: #16a34a; } /* Green 600 */
+        .btn-green:hover { background-color: #15803d; } /* Green 700 */
+
+        .btn-amber { background-color: #d97706; } /* Amber 600 */
+        .btn-amber:hover { background-color: #b45309; } /* Amber 700 */
+
+        .btn-red { background-color: #dc2626; } /* Red 600 */
+        .btn-red:hover { background-color: #b91c1c; } /* Red 700 */
+        
+        .btn-gray { background-color: #4b5563; } /* Gray 600 */
+        .btn-gray:hover { background-color: #374151; }
+
+        /* Log Colors */
+        #logArea {
+            background-color: #fdfbf7; /* Off-White / Cream for a clean console */
+            color: #334155;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .log-entry { margin-bottom: 4px; padding: 6px 10px; border-bottom: 1px solid #f1f5f9; border-radius: 4px; font-size: 13px; }
+        .log-entry:hover { background-color: #f8fafc; }
+        .log-SYSTEM { color: #64748b; } /* Slate 500 */
+        .log-USER { color: #0f172a; font-weight: 600; background-color: #eff6ff; border-left: 4px solid #3b82f6;} 
+        .log-SUCCESS { color: #059669; border-left: 4px solid #10b981;} /* Emerald 600 */
+        .log-WARNING { color: #d97706; border-left: 4px solid #f59e0b;} /* Amber 600 */
+        .log-ERROR { color: #dc2626; border-left: 4px solid #ef4444; background-color: rgba(254, 226, 226, 0.5);} /* Red 600 */
+
+        .status-dot {
+            width: 12px; height: 12px; border-radius: 50%;
+            display: inline-block; margin-right: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
+        .status-ready { background-color: #22c55e; }
+        .status-exec { background-color: #3b82f6; }
+        .status-warn { background-color: #f59e0b; }
+        .status-err { background-color: #ef4444; }
+
+        /* Workflow List Styling */
+        .wf-item {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s;
+        }
+        .wf-item:hover {
+            border-color: #93c5fd;
+            background-color: #eff6ff;
+        }
+        .wf-selected {
+            background-color: #dbeafe !important;
+            border: 2px solid #3b82f6 !important;
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+        @keyframes subtle-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .wf-running {
+            animation: subtle-pulse 1.5s infinite;
+            border-color: #2563eb !important;
+            background-color: #eff6ff !important;
+        }
+    </style>
+</head>
+<body class="p-4 gap-4">
+
+    <!-- Sidebar -->
+    <aside class="w-80 flex flex-col shrink-0 gap-4">
+        <!-- Header Box -->
+        <div class="box-panel p-5 flex flex-col bg-white border-b-4 border-blue-600 space-y-4">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded bg-blue-100 flex items-center justify-center mr-4 shrink-0">
+                    <i class="fas fa-robot text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-[17px] text-gray-900 leading-tight">AI-Driven<br>Automation Agent</h1>
+                </div>
+            </div>
+            
+            <div class="flex items-center text-xs font-bold text-gray-700 bg-gray-100 px-3 py-2 rounded-lg border border-gray-200 shadow-inner justify-center w-full">
+                <div class="status-dot status-ready" id="statusIndicator"></div>
+                <span id="statusLabel" class="tracking-wide">System Idle</span>
+            </div>
+        </div>
+
+        <!-- Controls Box -->
+        <div class="box-panel p-5 flex-1 flex flex-col space-y-6 overflow-y-auto relative">
+            <!-- Target URL -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide"><i class="fas fa-link text-gray-400 mr-2"></i>Target Domain</label>
+                <input type="url" id="targetUrl" class="w-full bg-input rounded-lg px-4 py-3 text-sm font-medium text-gray-900 placeholder-gray-400" value="https://qa-ebenefits.benefit-test.com/fbmc">
+            </div>
+
+            <!-- Workflows -->
+            <div class="flex-1 flex flex-col min-h-0">
+                <label class="flex justify-between items-center text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">
+                    <span><i class="fas fa-list text-gray-400 mr-2"></i>Recorded Flows</span>
+                </label>
+                <div id="workflowList" class="flex-1 overflow-y-auto space-y-2 pr-1 pb-2">
+                    <!-- JS Injected -->
+                    <div class="text-gray-500 font-medium text-sm py-2">Loading references...</div>
+                </div>
+            </div>
+
+
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full min-w-0 gap-4">
+        
+        <!-- Log Area -->
+        <div class="box-panel p-2 flex-1 flex flex-col overflow-hidden">
+            <div id="logArea" class="flex-1 p-5 overflow-y-auto mono leading-relax relative">
+                <div class="log-entry log-SYSTEM flex items-start">
+                    <span class="text-slate-500 mr-4 select-none font-bold">00:00:00</span>
+                    <span>System initialized. Listening for commands...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Bar with Colored Buttons -->
+        <div class="box-panel p-5 shrink-0 bg-white">
+            <div class="flex items-center gap-4">
+                <div class="flex-1 relative flex items-center bg-input rounded-xl overflow-hidden drop-shadow-sm py-3 px-4">
+                    <span class="text-blue-500 mr-3"><i class="fas fa-bolt text-[16px]"></i></span>
+                    <input type="text" id="commandInput" class="w-full bg-transparent border-none text-gray-900 font-medium text-base focus:outline-none placeholder-gray-400" autocomplete="off" placeholder="Write instructions for the agent (e.g. 'Create new record')...">
+                </div>
+                
+                <button id="executeBtn" class="btn-solid btn-blue rounded-xl px-6 py-3 text-base shadow-sm hover:shadow transition">
+                    <i class="fas fa-robot mr-2 text-sm text-blue-200"></i>Agentic Execute
+                </button>
+                
+                <div class="w-px h-8 bg-gray-300 mx-1"></div>
+                
+                <button id="replayBtn" class="btn-solid btn-green rounded-xl px-5 py-3 text-sm">
+                    <i class="fas fa-redo-alt mr-2 text-xs"></i>Replay
+                </button>
+                
+                <button id="recordBtn" class="btn-solid btn-amber rounded-xl px-5 py-3 text-sm">
+                    <i class="fas fa-video mr-2 text-xs"></i>Record
+                </button>
+                
+                <button id="stopBtn" class="btn-solid btn-red rounded-xl px-5 py-3 text-sm">
+                    <i class="fas fa-stop-circle mr-2 text-xs"></i>Stop
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const targetUrl = document.getElementById('targetUrl');
+        const workflowList = document.getElementById('workflowList');
+        const commandInput = document.getElementById('commandInput');
+        const executeBtn = document.getElementById('executeBtn');
+        const replayBtn = document.getElementById('replayBtn');
+        const recordBtn = document.getElementById('recordBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const logArea = document.getElementById('logArea');
+        const statusLabel = document.getElementById('statusLabel');
+        const statusIndicator = document.getElementById('statusIndicator');
+        
+        let selectedWorkflow = "workflow.json";
+
+        function getTimestamp() {
+            const now = new Date();
+            return now.toLocaleTimeString('en-US', { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit"});
+        }
+
+        function logMessage(msg, type='SYSTEM') {
+            const div = document.createElement('div');
+            div.className = `log-entry log-${type} flex items-start`;
+            
+            let icon = '';
+            if(type === 'SUCCESS') icon = '<i class="fas fa-check text-green-400 mr-2 mt-1"></i>';
+            else if(type === 'ERROR') icon = '<i class="fas fa-times text-red-400 mr-2 mt-1"></i>';
+            else if(type === 'WARNING') icon = '<i class="fas fa-exclamation text-yellow-400 mr-2 mt-1"></i>';
+            else if(type === 'USER') icon = '<i class="fas fa-chevron-right text-blue-400 mr-2 mt-1"></i>';
+
+            div.innerHTML = `
+                <span class="text-slate-500 mr-4 select-none shrink-0 font-bold">${getTimestamp()}</span>
+                <div class="flex-1 whitespace-pre-wrap">${icon}${msg}</div>
+            `;
+            logArea.appendChild(div);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function setStatus(statusType, text) {
+            statusLabel.textContent = text;
+            statusIndicator.className = `status-dot status-${statusType}`;
+        }
+
+        async function loadWorkflows() {
+            try {
+                const res = await fetch('/api/workflows');
+                const workflows = await res.json();
+                workflowList.innerHTML = '';
+                
+                if (workflows.length === 0) workflows.push('workflow.json');
+                if (!workflows.includes(selectedWorkflow)) selectedWorkflow = workflows[0];
+                
+                workflows.forEach(wf => {
+                    const idTag = 'wf-' + wf.replace(/\W/g, '');
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.className = `wf-item px-3 py-3 rounded-lg flex items-center justify-between cursor-pointer group ${wf === selectedWorkflow ? 'wf-selected' : ''}`;
+
+                    const leftContent = document.createElement('label');
+                    leftContent.className = "flex items-center space-x-3 flex-1 cursor-pointer";
+                    leftContent.htmlFor = idTag;
+                    
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = 'workflowSelection';
+                    radio.id = idTag;
+                    radio.value = wf;
+                    radio.checked = wf === selectedWorkflow;
+                    radio.className = "w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer";
+                    radio.onchange = () => {
+                        selectedWorkflow = wf;
+                        loadWorkflows(); // re-render layout
+                    };
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = "text-sm break-all";
+                    nameSpan.innerText = wf.replace('.json', '');
+                    
+                    leftContent.appendChild(radio);
+                    leftContent.appendChild(nameSpan);
+                    
+                    const actions = document.createElement('div');
+                    actions.className = "flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity";
+                    
+                    const delBtn = document.createElement('button');
+                    delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                    delBtn.className = "text-gray-400 hover:text-white bg-white p-1.5 rounded shadow-sm border border-gray-200 hover:border-red-600 hover:bg-red-500 transition w-7 h-7 flex items-center justify-center";
+                    delBtn.title = "Delete";
+                    delBtn.onclick = (e) => { e.preventDefault(); actionWorkflow('/api/workflow/delete', wf); };
+                    
+                    actions.appendChild(delBtn);
+                    
+                    wrapper.appendChild(leftContent);
+                    wrapper.appendChild(actions);
+                    workflowList.appendChild(wrapper);
+                });
+            } catch (e) {
+                workflowList.innerHTML = `<div class="text-red-500 font-bold text-sm py-2">Cannot load workflows</div>`;
+            }
+        }
+
+        async function actionWorkflow(endpoint, name) {
+            const formData = new FormData();
+            formData.append('name', name);
+            try {
+                const res = await fetch(endpoint, { method: 'POST', body: formData });
+                const data = await res.json();
+                logMessage(data.message, data.status === 'success' ? 'SUCCESS' : 'ERROR');
+                loadWorkflows();
+            } catch(e) {
+                logMessage('Error executing action: ' + e, 'ERROR');
+            }
+        }
+
+        executeBtn.onclick = async () => {
+            if (!commandInput.value.trim()) { 
+                logMessage("No command provided.", "WARNING"); 
+                return; 
+            }
+            
+            setStatus('exec', 'Executing...');
+            logMessage(`${commandInput.value}`, "USER");
+            
+            const formData = new FormData();
+            formData.append('url', targetUrl.value);
+            formData.append('workflow', selectedWorkflow);
+            formData.append('command', commandInput.value);
+            
+            try {
+                const res = await fetch('/api/execute', { method: 'POST', body: formData });
+                const data = await res.json();
+                if(data.status !== 'started') {
+                    logMessage(data.message, 'SUCCESS');
+                    setStatus('ready', 'System Idle');
+                }
+                commandInput.value = '';
+            } catch(e) { 
+                logMessage("System fault: " + e, 'ERROR'); 
+                setStatus('err', 'System Fault');
+            }
+        };
+        
+        replayBtn.onclick = async () => {
+            setStatus('exec', 'Replaying...');
+            const formData = new FormData();
+            formData.append('url', targetUrl.value);
+            formData.append('workflow', selectedWorkflow);
+            try {
+                const res = await fetch('/api/replay', { method: 'POST', body: formData });
+                const data = await res.json();
+                if(data.status !== 'started') logMessage(data.message, 'SUCCESS');
+            } catch(e) { 
+                logMessage(e, 'ERROR'); 
+                setStatus('err', 'System Fault');
+            }
+        };
+        
+        recordBtn.onclick = async () => {
+            setStatus('warn', 'Recording Active');
+            const formData = new FormData();
+            formData.append('url', targetUrl.value);
+            formData.append('workflow', selectedWorkflow);
+            try {
+                const res = await fetch('/api/record', { method: 'POST', body: formData });
+                const data = await res.json();
+                if(data.status !== 'started') logMessage(data.message, 'WARNING');
+            } catch(e) { 
+                logMessage(e, 'ERROR'); 
+                setStatus('err', 'System Fault');
+            }
+        };
+        
+        stopBtn.onclick = async () => {
+            setStatus('err', 'Sequence Terminated');
+            try {
+                const res = await fetch('/api/stop', { method: 'POST' });
+                logMessage((await res.json()).message, 'ERROR');
+                setTimeout(() => setStatus('ready', 'System Idle'), 3000);
+            } catch(e) { logMessage(e, 'ERROR'); }
+        };
+
+        commandInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') executeBtn.click();
+        });
+
+        // Init
+        loadWorkflows();
+        
+        // Polling logs
+        setInterval(async () => {
+            try {
+                const res = await fetch('/api/logs');
+                if (res.ok) {
+                    const logs = await res.json();
+                    if(logs.length) {
+                        logs.forEach(l => {
+                            logMessage(l.msg, l.type);
+                            if(l.msg.includes("All tasks completed") || l.msg.includes("Replay finished") || l.msg.includes("Execution stopped") || l.msg.includes("Recording completed.")) {
+                                setStatus('ready', 'System Idle');
+                                document.querySelectorAll('.wf-item').forEach(el => el.classList.remove('wf-running'));
+                            } else if (l.msg.includes("Executing") || l.msg.includes("Starting")) {
+                                setStatus('exec', 'Active Runner');
+                                document.querySelectorAll('.wf-selected').forEach(el => el.classList.add('wf-running'));
+                            }
+                        });
+                    }
+                }
+            } catch(e){}
+        }, 1000);
+    </script>
+</body>
+</html>

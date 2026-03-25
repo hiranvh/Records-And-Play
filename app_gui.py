@@ -547,7 +547,7 @@ class App(ctk.CTk):
                 if not wf_name.endswith('.json'): wf_name += '.json'
                 success, msg, screenshot, _ = web_core.run_execution_mode(target_url, headless=False, workflow_name=wf_name)
                 if success:
-                    self.update_log(f"Replay finished. Screenshot saved to {screenshot}")
+                    self.update_log(f"Replay finished. Execution logged to Excel (.xlsx) & Screenshot saved to {screenshot}")
                     self.set_status("Replay Complete", "green")
                 else:
                     self.update_log(msg)
