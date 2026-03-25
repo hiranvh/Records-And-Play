@@ -1,0 +1,439 @@
+{
+    "schema_version": 2,
+    "recorded_at": 1774425813,
+    "url": "https://qa-ebenefits.benefit-test.com/fbmc",
+    "steps": [
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "UserName",
+            "name": "UserName",
+            "label": "UserName",
+            "value": "prodsupport",
+            "selector": "#UserName",
+            "input_type": "text"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "Password",
+            "name": "Password",
+            "label": "Password",
+            "value": "Fbmc@dm1n$2016",
+            "selector": "#Password",
+            "input_type": "password"
+        },
+        {
+            "type": "click",
+            "tag": "button",
+            "text": "Login",
+            "selector": "div#Login > button:nth-of-type(1)",
+            "input_type": "submit"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "text": "Duval County Public Schools",
+            "selector": "html:nth-of-type(1) > body:nth-of-type(1) > div:nth-of-type(4) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(4) > table:nth-of-type(1) > tbody:nth-of-type(1) > tr:nth-of-type(4) > td:nth-of-type(3) > a:nth-of-type(1)"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "text": "Employee Administration View, add and edit the Employee Information",
+            "selector": "div#dashbourdId > ul:nth-of-type(1) > li:nth-of-type(1) > a:nth-of-type(1)"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "id": "BtnAdd",
+            "label": "BtnAdd",
+            "text": "person_add",
+            "selector": "#BtnAdd"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "EmployeeVM_Person_FirstName",
+            "name": "EmployeeVM.Person.FirstName",
+            "label": "First Name",
+            "value": "GH",
+            "selector": "#EmployeeVM_Person_FirstName",
+            "input_type": "text"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "EmployeeVM_Person_LastName",
+            "name": "EmployeeVM.Person.LastName",
+            "label": "Last Name",
+            "value": "ML",
+            "selector": "#EmployeeVM_Person_LastName",
+            "input_type": "text"
+        },
+        {
+            "type": "select",
+            "tag": "select",
+            "id": "EmployeeVM_Person_PersonalDetails_MaritalStatus",
+            "name": "EmployeeVM.Person.PersonalDetails.MaritalStatus",
+            "label": "Marital Status",
+            "text": "Unknown",
+            "value": "Unknown",
+            "selector": "#EmployeeVM_Person_PersonalDetails_MaritalStatus",
+            "input_type": "select-one"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "EmployeeVM_Person_DateOfBirth",
+            "name": "EmployeeVM.Person.DateOfBirth",
+            "label": "DOB",
+            "selector": "#EmployeeVM_Person_DateOfBirth",
+            "placeholder": "MM/DD/YYYY",
+            "input_type": "text"
+        },
+        {
+            "type": "select",
+            "tag": "select",
+            "value": "1983",
+            "selector": "div#ui-datepicker-div > div:nth-of-type(1) > div:nth-of-type(1) > select:nth-of-type(2)",
+            "input_type": "select-one"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "EmployeeVM_Person_DateOfBirth",
+            "name": "EmployeeVM.Person.DateOfBirth",
+            "label": "DOB",
+            "selector": "#EmployeeVM_Person_DateOfBirth",
+            "placeholder": "MM/DD/YYYY",
+            "input_type": "text"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "text": "1",
+            "selector": "div#ui-datepicker-div > table:nth-of-type(1) > tbody:nth-of-type(1) > tr:nth-of-type(1) > td:nth-of-type(3) > a:nth-of-type(1)"
+        },
+        {
+            "type": "select",
+            "tag": "select",
+            "id": "EmployeeVM_Person_Gender",
+            "name": "EmployeeVM.Person.Gender",
+            "label": "EmployeeVM.Person.Gender",
+            "text": "Female",
+            "value": "M",
+            "selector": "#EmployeeVM_Person_Gender",
+            "input_type": "select-one"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "EmployeeVM_Person_SSN_mask",
+            "name": "EmployeeVM.Person.SSN_mask",
+            "label": "EmployeeVM.Person.SSN_mask",
+            "selector": "#EmployeeVM_Person_SSN_mask",
+            "input_type": "text"
+        },
+        {
+            "type": "click",
+            "tag": "input",
+            "id": "EmployeeVM_Person_SSN_mask",
+            "name": "EmployeeVM.Person.SSN_mask",
+            "label": "EmployeeVM.Person.SSN_mask",
+            "text": "EmployeeVM.Person.SSN_mask",
+            "selector": "#EmployeeVM_Person_SSN_mask",
+            "input_type": "text"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "EmployeeVM_Person_SSN",
+            "name": "EmployeeVM.Person.SSN",
+            "label": "SSN",
+            "value": "678-54-3217",
+            "selector": "#EmployeeVM_Person_SSN",
+            "input_type": "text"
+        },
+        {
+            "type": "click",
+            "tag": "label",
+            "text": "No",
+            "selector": "form#FormEmployeeAdd > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(4) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(1) > label:nth-of-type(2)"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "EmployeeVM_Person_AltPhone2",
+            "name": "EmployeeVM.Person.AltPhone2",
+            "label": "Cell Phone",
+            "value": "(567) 890-3456",
+            "selector": "#EmployeeVM_Person_AltPhone2",
+            "input_type": "text"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "EmployeeVM_Person_HomeAddress_Address1",
+            "name": "EmployeeVM.Person.HomeAddress.Address1",
+            "label": "Address1",
+            "value": "gh villa",
+            "selector": "#EmployeeVM_Person_HomeAddress_Address1",
+            "input_type": "text"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "EmployeeVM_Person_HomeAddress_ZipCode",
+            "name": "EmployeeVM.Person.HomeAddress.ZipCode",
+            "label": "Zip",
+            "value": "20705",
+            "selector": "#EmployeeVM_Person_HomeAddress_ZipCode",
+            "input_type": "text"
+        },
+        {
+            "type": "select",
+            "tag": "select",
+            "id": "EmployeeVM_Person_HomeAddress_County",
+            "name": "EmployeeVM.Person.HomeAddress.County",
+            "label": "County",
+            "text": "MONTGOMERY",
+            "value": "MONTGOMERY",
+            "selector": "#EmployeeVM_Person_HomeAddress_County",
+            "input_type": "select-one"
+        },
+        {
+            "type": "select",
+            "tag": "select",
+            "id": "EmployeeVM_Person_HomeAddress_City",
+            "name": "EmployeeVM.Person.HomeAddress.City",
+            "label": "City",
+            "text": "CALVERTON",
+            "value": "CALVERTON",
+            "selector": "#EmployeeVM_Person_HomeAddress_City",
+            "input_type": "select-one"
+        },
+        {
+            "type": "click",
+            "tag": "input",
+            "id": "contactSameAsHomeAddress",
+            "name": "contactSameAsHomeAddress",
+            "label": "contactSameAsHomeAddress",
+            "text": "true",
+            "selector": "#contactSameAsHomeAddress",
+            "input_type": "checkbox"
+        },
+        {
+            "type": "select",
+            "tag": "select",
+            "id": "EmployeeVM_SubGroupId",
+            "name": "EmployeeVM.SubGroupId",
+            "label": "EmployeeVM.SubGroupId",
+            "text": "Duval County Public Schools - Retiree - Under 65",
+            "value": "177",
+            "selector": "#EmployeeVM_SubGroupId",
+            "input_type": "select-one"
+        },
+        {
+            "type": "select",
+            "tag": "select",
+            "id": "EmployeeVM_ClassId",
+            "name": "EmployeeVM.ClassId",
+            "label": "Employee Class",
+            "text": "Retiree",
+            "value": "Retiree",
+            "selector": "#EmployeeVM_ClassId",
+            "input_type": "select-one"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "EmployeeVM_HireDate",
+            "name": "EmployeeVM.HireDate",
+            "label": "Date of Hire",
+            "value": "__/__/____",
+            "selector": "#EmployeeVM_HireDate",
+            "placeholder": "MM/DD/YYYY",
+            "input_type": "text"
+        },
+        {
+            "type": "select",
+            "tag": "select",
+            "value": "2016",
+            "selector": "div#ui-datepicker-div > div:nth-of-type(1) > div:nth-of-type(1) > select:nth-of-type(2)",
+            "input_type": "select-one"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "EmployeeVM_HireDate",
+            "name": "EmployeeVM.HireDate",
+            "label": "Date of Hire",
+            "value": "__/__/____",
+            "selector": "#EmployeeVM_HireDate",
+            "placeholder": "MM/DD/YYYY",
+            "input_type": "text"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "text": "2",
+            "selector": "div#ui-datepicker-div > table:nth-of-type(1) > tbody:nth-of-type(1) > tr:nth-of-type(1) > td:nth-of-type(4) > a:nth-of-type(1)"
+        },
+        {
+            "type": "click",
+            "tag": "button",
+            "id": "BtnActivateAndEnroll",
+            "name": "ActivateandEnrollValue",
+            "label": "ActivateandEnrollValue",
+            "text": "Activate & Enroll",
+            "selector": "#BtnActivateAndEnroll",
+            "input_type": "submit"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "Item1_EffectiveDate",
+            "name": "Item1.EffectiveDate",
+            "label": "Effective Date:",
+            "selector": "#Item1_EffectiveDate",
+            "placeholder": "MM/DD/YYYY",
+            "input_type": "text"
+        },
+        {
+            "type": "select",
+            "tag": "select",
+            "value": "0",
+            "selector": "div#ui-datepicker-div > div:nth-of-type(1) > div:nth-of-type(1) > select:nth-of-type(1)",
+            "input_type": "select-one"
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "Item1_EffectiveDate",
+            "name": "Item1.EffectiveDate",
+            "label": "Effective Date:",
+            "selector": "#Item1_EffectiveDate",
+            "placeholder": "MM/DD/YYYY",
+            "input_type": "text"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "text": "1",
+            "selector": "div#ui-datepicker-div > table:nth-of-type(1) > tbody:nth-of-type(1) > tr:nth-of-type(1) > td:nth-of-type(5) > a:nth-of-type(1)"
+        },
+        {
+            "type": "click",
+            "tag": "div",
+            "id": "EnrollStep2",
+            "label": "EnrollStep2",
+            "text": "2 Plan Selection",
+            "selector": "#EnrollStep2"
+        },
+        {
+            "type": "click",
+            "tag": "input",
+            "id": "btnDeclineAll",
+            "label": "btnDeclineAll",
+            "text": "Decline All Coverage",
+            "selector": "#btnDeclineAll",
+            "input_type": "button"
+        },
+        {
+            "type": "click",
+            "tag": "input",
+            "id": "Item1_ProductLst[0]IsDeclinedInd",
+            "name": "Item1.ProductLst[0].IsDeclinedInd",
+            "label": "Item1.ProductLst[0].IsDeclinedInd",
+            "text": "true",
+            "selector": "#Item1_ProductLst\\[0\\]IsDeclinedInd",
+            "input_type": "checkbox"
+        },
+        {
+            "type": "click",
+            "tag": "input",
+            "id": "Item1_ProductLst[1]IsDeclinedInd",
+            "name": "Item1.ProductLst[1].IsDeclinedInd",
+            "label": "Item1.ProductLst[1].IsDeclinedInd",
+            "text": "true",
+            "selector": "#Item1_ProductLst\\[1\\]IsDeclinedInd",
+            "input_type": "checkbox"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "text": "Medical 10 Plans",
+            "selector": "div#div_AccodianHead_1 > a:nth-of-type(1)"
+        },
+        {
+            "type": "click",
+            "tag": "label",
+            "text": "SELECT PLAN",
+            "selector": "div#div_ShowPlans_1 > div:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(1) > label:nth-of-type(1)"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "text": "Medical 10 Plans",
+            "selector": "div#div_AccodianHead_1 > a:nth-of-type(1)"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "text": "Dental 2 Plans",
+            "selector": "div#div_AccodianHead_16 > a:nth-of-type(1)"
+        },
+        {
+            "type": "click",
+            "tag": "label",
+            "text": "SELECT PLAN",
+            "selector": "div#div_ShowPlans_16 > div:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > div:nth-of-type(1) > label:nth-of-type(1)"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "text": "Dental 2 Plans",
+            "selector": "div#div_AccodianHead_16 > a:nth-of-type(1)"
+        },
+        {
+            "type": "click",
+            "tag": "label",
+            "text": "No",
+            "selector": "div#divCobSelect > div:nth-of-type(1) > label:nth-of-type(2)"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "id": "BtnGotoProfile",
+            "label": "BtnGotoProfile",
+            "text": "Next",
+            "selector": "#BtnGotoProfile"
+        },
+        {
+            "type": "click",
+            "tag": "label",
+            "text": "No",
+            "selector": "div#divCobSelect > div:nth-of-type(1) > label:nth-of-type(2)"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "id": "BtnSubmitEnrollment",
+            "label": "BtnSubmitEnrollment",
+            "text": "Submit",
+            "selector": "#BtnSubmitEnrollment"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "text": "Close",
+            "selector": "div#EnrollSummaryWrap > div:nth-of-type(2) > div:nth-of-type(1) > ul:nth-of-type(1) > li:nth-of-type(3) > a:nth-of-type(1)"
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "text": "Employee Details",
+            "selector": "div#divCoverageTitle > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > ul:nth-of-type(1) > li:nth-of-type(1) > a:nth-of-type(1)"
+        }
+    ]
+}

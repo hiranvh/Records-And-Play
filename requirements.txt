@@ -1,0 +1,6 @@
+selenium
+flask
+customtkinter
+pydantic
+llama-cpp-python
+faker
