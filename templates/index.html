@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Automation Agent · Commander</title>
+    <meta name="description" content="Autonomous AI form-filling agent — navigate to any page and let the agent fill every field intelligently.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chosen/1.8.7/chosen.jquery.min.js"></script>
+    <style>
+        :root {
+            --bg-base:     #0a0d14;
+            --bg-panel:    #111827;
+            --bg-card:     #1a2235;
+            --bg-input:    #0d1117;
+            --border:      #1e2d45;
+            --border-glow: #2563eb;
+            --text-primary:#e2e8f0;
+            --text-muted:  #64748b;
+            --text-dim:    #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green:#10b981;
+            --accent-amber:#f59e0b;
+            --accent-red:  #ef4444;
+            --accent-violet:#8b5cf6;
+            --accent-cyan: #06b6d4;
+            --glow-blue:   rgba(59,130,246,0.18);
+            --glow-green:  rgba(16,185,129,0.18);
+            --glow-violet: rgba(139,92,246,0.18);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1e2d45; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2d4070; }
+
+        /* ─── Layout ─────────────────────────────────────────────── */
+        .app-layout {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ─── Sidebar ────────────────────────────────────────────── */
+        .sidebar {
+            width: 280px;
+            min-width: 280px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, #0d1b35 0%, #111827 100%);
+        }
+
+        .logo-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(37,99,235,0.4);
+            flex-shrink: 0;
+        }
+
+        .logo-text h1 {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.2;
+            letter-spacing: 0.01em;
+        }
+        .logo-text p {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-top: 2px;
+        }
+
+        /* Status pill */
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-dim);
+            letter-spacing: 0.04em;
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            flex-shrink: 0;
+        }
+        .status-dot.idle   { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+        .status-dot.active { background: var(--accent-blue);  box-shadow: 0 0 6px var(--accent-blue); animation: blink 1s infinite; }
+        .status-dot.warn   { background: var(--accent-amber); box-shadow: 0 0 6px var(--accent-amber); }
+        .status-dot.error  { background: var(--accent-red);   box-shadow: 0 0 6px var(--accent-red); }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .sidebar-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .field-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .input-dark {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-dark:focus {
+            border-color: var(--border-glow);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+        }
+
+        .textarea-dark {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+            outline: none;
+            resize: vertical;
+            min-height: 70px;
+            transition: border-color 0.2s;
+        }
+        .textarea-dark:focus { border-color: var(--border-glow); }
+
+        .commander-history {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .history-list {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            flex: 1;
+            min-height: 26px;
+        }
+
+        .history-chip {
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-dim);
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            max-width: 330px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+
+        .history-chip:hover {
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+            background: rgba(37,99,235,0.14);
+        }
+
+        .history-empty {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 4px 0;
+        }
+
+        /* Workflow list */
+        .wf-scroll {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .wf-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 7px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+            gap: 8px;
+        }
+        .wf-item:hover { background: var(--bg-card); border-color: var(--border); }
+        .wf-item.selected { background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.4); }
+
+        .wf-item input[type="radio"] { accent-color: var(--accent-blue); cursor: pointer; }
+        .wf-name { font-size: 12px; font-weight: 500; color: var(--text-dim); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .wf-actions { display: none; align-items: center; gap: 4px; }
+        .wf-item:hover .wf-actions { display: flex; }
+        .wf-act { font-size: 10px; color: var(--text-muted); cursor: pointer; padding: 3px 5px; border-radius: 4px; transition: all 0.15s; }
+        .wf-ren:hover { color: var(--accent-blue); background: rgba(59,130,246,0.12); }
+        .wf-del:hover { color: var(--accent-red); background: rgba(239,68,68,0.12); }
+
+        /* ─── Main Content ───────────────────────────────────────── */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ─── Mode tabs ──────────────────────────────────────────── */
+        .mode-tabs {
+            display: flex;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+        }
+
+        .mode-tab {
+            padding: 14px 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            letter-spacing: 0.02em;
+            user-select: none;
+        }
+        .mode-tab:hover { color: var(--text-primary); }
+        .mode-tab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+
+        /* ─── Panel containers (toggled by tab) ──────────────────── */
+        .tab-panel { display: none; }
+        .tab-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+        /* ─── Log area ───────────────────────────────────────────── */
+        .log-console {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--bg-base);
+            padding: 12px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            padding: 5px 8px;
+            border-radius: 5px;
+            margin-bottom: 2px;
+            transition: background 0.1s;
+        }
+        .log-entry:hover { background: rgba(255,255,255,0.03); }
+        .log-ts { color: var(--text-muted); flex-shrink: 0; font-size: 10px; padding-top: 2px; }
+        .log-badge {
+            flex-shrink: 0;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 5px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .log-msg { flex: 1; white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
+
+        .badge-SYSTEM  { background: rgba(100,116,139,0.2); color:#64748b; }
+        .badge-SUCCESS { background: rgba(16,185,129,0.15); color:#10b981; }
+        .badge-ERROR   { background: rgba(239,68,68,0.15);  color:#ef4444; }
+        .badge-WARNING { background: rgba(245,158,11,0.15); color:#f59e0b; }
+        .badge-USER    { background: rgba(59,130,246,0.15); color:#3b82f6; }
+        .badge-AI      { background: rgba(139,92,246,0.15); color:#8b5cf6; }
+
+        /* ─── Action bars ────────────────────────────────────────── */
+        .action-bar {
+            padding: 14px 16px;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* ─── Buttons ────────────────────────────────────────────── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.18s;
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+        }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn:active:not(:disabled) { transform: scale(0.97); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            color: #fff;
+            box-shadow: 0 0 16px rgba(37,99,235,0.35);
+        }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 0 22px rgba(37,99,235,0.55); filter: brightness(1.1); }
+
+        .btn-agent {
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
+            color: #fff;
+            box-shadow: 0 0 16px rgba(124,58,237,0.35);
+        }
+        .btn-agent:hover:not(:disabled) { box-shadow: 0 0 22px rgba(124,58,237,0.55); filter: brightness(1.1); }
+
+        .btn-green {
+            background: linear-gradient(135deg, #059669, #0d9488);
+            color: #fff;
+            box-shadow: 0 0 12px rgba(5,150,105,0.25);
+        }
+        .btn-green:hover:not(:disabled) { filter: brightness(1.1); }
+
+        .btn-amber {
+            background: linear-gradient(135deg, #d97706, #b45309);
+            color: #fff;
+            box-shadow: 0 0 12px rgba(217,119,6,0.25);
+        }
+        .btn-amber:hover:not(:disabled) { filter: brightness(1.1); }
+
+        .btn-red {
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            color: #fff;
+        }
+        .btn-red:hover:not(:disabled) { filter: brightness(1.1); }
+
+        .btn-ghost {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+        }
+        .btn-ghost:hover:not(:disabled) { border-color: var(--accent-blue); color: var(--text-primary); }
+
+        /* ─── Hero Agent Panel ───────────────────────────────────── */
+        .agent-hero {
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(37,99,235,0.06) 100%);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .agent-hero h2 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .agent-hero p {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .agent-pipeline {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .pipeline-step {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+        .ps-scan    { background: rgba(6,182,212,0.12);   color: var(--accent-cyan); }
+        .ps-think   { background: rgba(139,92,246,0.12);  color: var(--accent-violet); }
+        .ps-fill    { background: rgba(16,185,129,0.12);  color: var(--accent-green); }
+        .ps-alert   { background: rgba(245,158,11,0.12);  color: var(--accent-amber); }
+        .ps-submit  { background: rgba(37,99,235,0.12);   color: var(--accent-blue); }
+
+        .pipeline-arrow { color: var(--text-muted); font-size: 10px; }
+
+        /* ─── Agent stats bar ────────────────────────────────────── */
+        .agent-stats {
+            display: flex;
+            gap: 1px;
+            background: var(--border);
+            border-top: 1px solid var(--border);
+        }
+        .stat-cell {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--bg-panel);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .stat-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
+        .stat-value { font-size: 18px; font-weight: 800; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; }
+        .stat-value.green { color: var(--accent-green); }
+        .stat-value.blue  { color: var(--accent-blue); }
+        .stat-value.amber { color: var(--accent-amber); }
+
+        /* ─── Override data section ──────────────────────────────── */
+        .override-toggle {
+            font-size: 11px;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border-radius: 7px;
+            border: 1px solid var(--border);
+            user-select: none;
+            transition: all 0.15s;
+        }
+        .override-toggle:hover { border-color: var(--accent-blue); color: var(--text-dim); }
+
+        .override-panel {
+            display: none;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 6px;
+        }
+        .override-panel.open { display: block; }
+
+        /* Separator */
+        .sep { width: 1px; self-align: stretch; background: var(--border); margin: 0 4px; }
+
+        /* Record tab specific */
+        .record-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        /* Animated scanning line on agent run */
+        @keyframes scan-line {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .scanning {
+            background: linear-gradient(90deg, var(--bg-panel), rgba(37,99,235,0.15), var(--bg-panel));
+            background-size: 200% 200%;
+            animation: scan-line 2s ease infinite;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 9999;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background: rgba(16,185,129,0.9); color: #fff; border: 1px solid rgba(16,185,129,0.6); }
+        .toast.error   { background: rgba(239,68,68,0.9);  color: #fff; border: 1px solid rgba(239,68,68,0.6); }
+        .toast.info    { background: rgba(59,130,246,0.9); color: #fff; border: 1px solid rgba(59,130,246,0.6); }
+
+        /* ─── Chosen.js dark theme ──────────────────────────────── */
+        .chosen-container { width: 100% !important; font-family: 'JetBrains Mono', monospace; }
+        .chosen-container-single .chosen-single {
+            height: auto; padding: 8px 12px; line-height: 1.5;
+            background: var(--bg-input) !important; border: 1px solid var(--border) !important;
+            border-radius: 8px !important; box-shadow: none !important;
+            color: var(--text-primary) !important; font-size: 12px;
+        }
+        .chosen-container-single .chosen-single:hover,
+        .chosen-container-single.chosen-with-drop .chosen-single {
+            border-color: var(--border-glow) !important;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.15) !important;
+        }
+        .chosen-container-single .chosen-single div { background: transparent !important; border-left: none !important; }
+        .chosen-container-single .chosen-single div b { background: none !important; }
+        .chosen-container-single .chosen-single div b::after {
+            content: '\f107'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+            font-size: 10px; color: var(--text-muted);
+        }
+        .chosen-container .chosen-drop {
+            background: var(--bg-card) !important; border: 1px solid var(--border-glow) !important;
+            border-radius: 0 0 8px 8px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.6) !important;
+        }
+        .chosen-container .chosen-search { padding: 8px !important; border-bottom: 1px solid var(--border) !important; }
+        .chosen-container .chosen-search input[type=text] {
+            background: var(--bg-input) !important; border: 1px solid var(--border) !important;
+            border-radius: 6px !important; color: var(--text-primary) !important;
+            font-size: 11px !important; font-family: 'JetBrains Mono', monospace !important;
+            padding: 5px 8px !important; background-image: none !important;
+        }
+        .chosen-container .chosen-search input[type=text]:focus { border-color: var(--border-glow) !important; outline: none !important; }
+        .chosen-container .chosen-results { margin: 0 !important; padding: 4px 0 !important; }
+        .chosen-container .chosen-results li {
+            color: var(--text-dim) !important; font-size: 11px !important;
+            font-family: 'JetBrains Mono', monospace !important; padding: 7px 12px !important;
+        }
+        .chosen-container .chosen-results li.highlighted { background: rgba(37,99,235,0.25) !important; color: var(--text-primary) !important; }
+        .chosen-container .chosen-results li.result-selected { background: rgba(37,99,235,0.1) !important; color: var(--accent-blue) !important; font-weight: 600; }
+        .chosen-container .chosen-results li.no-results { background: transparent !important; color: var(--text-muted) !important; }
+    </style>
+</head>
+<body>
+
+<div class="app-layout">
+
+    <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-row">
+                <div class="logo-icon"><i class="fas fa-robot"></i></div>
+                <div class="logo-text">
+                    <h1>AI Automation<br>Commander</h1>
+                    <p>Autonomous Agent v2</p>
+                </div>
+            </div>
+            <div class="status-pill">
+                <div class="status-dot idle" id="statusDot"></div>
+                <span id="statusLabel">System Idle</span>
+            </div>
+        </div>
+
+        <div class="sidebar-body">
+            <!-- Target URL -->
+            <div>
+                <div class="field-label"><i class="fas fa-link"></i> Target URL</div>
+                <input type="url" id="targetUrl" class="input-dark"
+                    placeholder="https://example.com"
+                    value="https://qa-ebenefits.benefit-test.com/fbmc">
+            </div>
+
+            <!-- Recorded Workflows -->
+            <div style="flex:1; display:flex; flex-direction:column; min-height:0;">
+                <div class="field-label" style="justify-content:space-between;">
+                    <span><i class="fas fa-layer-group"></i> Recorded Workflows</span>
+                    <span id="wfCount" style="background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:1px 7px;font-size:9px;color:var(--text-muted);font-weight:700;">0</span>
+                </div>
+                <select id="workflowSelect" class="chosen-select" data-placeholder="Select a workflow..."></select>
+                <div style="display:flex;gap:6px;margin-top:6px;">
+                    <button class="btn btn-ghost" style="flex:1;font-size:10px;padding:5px 8px;" onclick="renameWorkflow(selectedWorkflow)">
+                        <i class="fas fa-pen"></i> Rename
+                    </button>
+                    <button class="btn btn-ghost" style="font-size:10px;padding:5px 8px;color:var(--accent-red);" onclick="deleteWorkflow(selectedWorkflow)">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ═══════════════════ MAIN ═══════════════════ -->
+    <div class="main-content">
+
+        <!-- Mode Tabs -->
+        <div class="mode-tabs">
+            <div class="mode-tab active" data-tab="agent" onclick="switchTab('agent')">
+                <i class="fas fa-brain"></i> Autonomous Agent
+            </div>
+            <div class="mode-tab" data-tab="replay" onclick="switchTab('replay')">
+                <i class="fas fa-play-circle"></i> Replay
+            </div>
+            <div class="mode-tab" data-tab="record" onclick="switchTab('record')">
+                <i class="fas fa-circle" style="color:var(--accent-red);font-size:9px;"></i> Record
+            </div>
+        </div>
+
+        <!-- ═══ TAB: AUTONOMOUS AGENT ═══ -->
+        <div class="tab-panel active" id="tab-agent">
+
+            <!-- LLM Commander (Agent screen only) -->
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg-panel);">
+                <div class="field-label" style="margin-bottom:8px;"><i class="fas fa-comment-dots"></i> LLM Commander</div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input
+                        id="commanderInput"
+                        class="input-dark"
+                        style="flex:1;"
+                        type="text"
+                        placeholder="e.g. create an enrollment"
+                    >
+                    <button class="btn btn-primary" onclick="runCommander()">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+                <div class="commander-history">
+                    <div id="commanderHistoryList" class="history-list"></div>
+                    <button class="btn btn-ghost" style="padding:6px 10px;font-size:10px;" onclick="clearCommanderHistory()">
+                        <i class="fas fa-eraser"></i> Clear History
+                    </button>
+                </div>
+                <div style="margin-top:7px;font-size:10px;color:var(--text-muted);line-height:1.5;">
+                    Example: "create an enrollment" — missing values are auto-generated.
+                </div>
+            </div>
+
+            <!-- Hero description + pipeline -->
+            <div class="agent-hero">
+                <h2>
+                    <span style="background:linear-gradient(135deg,#7c3aed,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">🤖 Autonomous Form-Filling Agent</span>
+                </h2>
+                <p>
+                    Navigate to any page — the agent automatically identifies every field, generates
+                    synthetic data, fills all inputs, handles alerts &amp; errors, then submits.
+                    No pre-recorded workflow needed.
+                </p>
+                <div class="agent-pipeline">
+                    <div class="pipeline-step ps-scan"><i class="fas fa-code"></i> HTML Scan</div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-step ps-think"><i class="fas fa-brain"></i> LLM Think</div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-step ps-fill"><i class="fas fa-pen"></i> Fill All</div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-step ps-alert"><i class="fas fa-exclamation-triangle"></i> Handle Alerts</div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-step ps-submit"><i class="fas fa-paper-plane"></i> Submit</div>
+                </div>
+            </div>
+
+            <!-- Override data toggle -->
+            <div style="padding:12px 16px; border-bottom:1px solid var(--border); background:var(--bg-panel);">
+                <div class="override-toggle" onclick="toggleOverride(this)" id="overrideToggle">
+                    <i class="fas fa-chevron-right" id="overrideChevron" style="transition:transform 0.2s;font-size:9px;"></i>
+                    <span style="font-weight:600;">Custom Field Overrides</span>
+                    <span style="margin-left:auto;opacity:0.5;font-size:10px;">e.g. name, SSN, zip</span>
+                </div>
+                <div class="override-panel" id="overridePanel">
+                    <div class="field-label" style="margin-bottom:6px;">JSON data to override AI-generated values</div>
+                    <textarea class="textarea-dark" id="overrideData" placeholder='{"first_name": "Alice", "last_name": "Smith", "ssn": "123-45-6789"}'></textarea>
+                    <div style="margin-top:8px;font-size:10px;color:var(--text-muted);">
+                        Tip: Any fields not overridden will be filled by the AI with synthetic data.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log console -->
+            <div class="log-console" id="agentLog">
+                <div class="log-entry">
+                    <span class="log-ts">00:00:00</span>
+                    <span class="log-badge badge-SYSTEM">SYS</span>
+                    <span class="log-msg">Autonomous agent ready. Enter a URL in the sidebar and click <strong>Run Agent</strong>.</span>
+                </div>
+            </div>
+
+            <!-- Stats bar -->
+            <div class="agent-stats" id="agentStats">
+                <div class="stat-cell">
+                    <div class="stat-label">Pages Processed</div>
+                    <div class="stat-value blue" id="statPages">—</div>
+                </div>
+                <div class="stat-cell">
+                    <div class="stat-label">Fields Filled</div>
+                    <div class="stat-value green" id="statFilled">—</div>
+                </div>
+                <div class="stat-cell">
+                    <div class="stat-label">Errors Found</div>
+                    <div class="stat-value amber" id="statErrors">—</div>
+                </div>
+                <div class="stat-cell">
+                    <div class="stat-label">Agent Status</div>
+                    <div class="stat-value" id="statStatus" style="font-size:13px;">Idle</div>
+                </div>
+            </div>
+
+            <!-- Agent action bar -->
+            <div class="action-bar">
+                <button class="btn btn-agent" id="agentRunBtn" onclick="runAgent()">
+                    <i class="fas fa-robot"></i> Run Agent
+                </button>
+                <div class="sep"></div>
+                <button class="btn btn-red" onclick="stopAll()">
+                    <i class="fas fa-stop-circle"></i> Stop
+                </button>
+                <div style="flex:1;"></div>
+                <div style="font-size:10px;color:var(--text-muted);text-align:right;line-height:1.5;">
+                    Agent polls every page<br>for form fields automatically
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ TAB: REPLAY ═══ -->
+        <div class="tab-panel" id="tab-replay">
+            <div style="padding:16px;border-bottom:1px solid var(--border);background:var(--bg-panel);">
+                <p style="font-size:12px;color:var(--text-muted);line-height:1.6;">
+                    <i class="fas fa-info-circle" style="color:var(--accent-blue);margin-right:6px;"></i>
+                    Select a workflow from the sidebar, then click <strong>Replay</strong> to execute the recorded steps.
+                </p>
+
+            </div>
+            <div class="log-console" id="replayLog">
+                <div class="log-entry">
+                    <span class="log-ts">00:00:00</span>
+                    <span class="log-badge badge-SYSTEM">SYS</span>
+                    <span class="log-msg">Select a workflow to replay.</span>
+                </div>
+            </div>
+            <div class="action-bar">
+                <button class="btn btn-green" onclick="replayWorkflow()">
+                    <i class="fas fa-play-circle"></i> Replay Selected Workflow
+                </button>
+                <button class="btn btn-ghost" onclick="clearReplayLogs()">
+                    <i class="fas fa-trash"></i> Clear Logs
+                </button>
+                <button class="btn btn-ghost" onclick="compactWorkflow()">
+                    <i class="fas fa-magic"></i> Compact
+                </button>
+                <div class="sep"></div>
+                <button class="btn btn-red" onclick="stopAll()">
+                    <i class="fas fa-stop-circle"></i> Stop
+                </button>
+            </div>
+        </div>
+
+        <!-- ═══ TAB: RECORD ═══ -->
+        <div class="tab-panel" id="tab-record">
+            <div style="padding:16px;border-bottom:1px solid var(--border);background:var(--bg-panel);">
+                <div style="padding:10px 14px;border-radius:8px;background:rgba(217,119,6,0.1);border:1px solid rgba(217,119,6,0.3);font-size:12px;color:#fbbf24;margin-bottom:8px;">
+                    <i class="fas fa-video" style="margin-right:6px;"></i>
+                    Recording mode: open browser, interact normally, then stop to save the workflow.
+                </div>
+            </div>
+            <div class="log-console" id="recordLog">
+                <div class="log-entry">
+                    <span class="log-ts">00:00:00</span>
+                    <span class="log-badge badge-SYSTEM">SYS</span>
+                    <span class="log-msg">Click <strong>Start Recording</strong> to begin capturing steps.</span>
+                </div>
+            </div>
+            <div class="action-bar">
+                <button class="btn btn-amber" id="recordBtn" onclick="startRecording()">
+                    <i class="fas fa-circle" style="color:#fca5a5;"></i> Start Recording
+                </button>
+                <div class="sep"></div>
+                <button class="btn btn-red" onclick="stopAll()">
+                    <i class="fas fa-stop-circle"></i> Stop
+                </button>
+            </div>
+        </div>
+    </div><!-- end main-content -->
+</div><!-- end app-layout -->
+
+<!-- Save workflow modal -->
+<div id="saveModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9000;align-items:center;justify-content:center;">
+    <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:14px;padding:28px 32px;width:380px;box-shadow:0 0 60px rgba(0,0,0,0.5);">
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:8px;">💾 Save Recording</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">Name this workflow to save it for future replays.</p>
+        <input type="text" id="workflowNameInput" class="input-dark" value="my_workflow" style="margin-bottom:20px;">
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button class="btn btn-ghost" onclick="closeSaveModal()">Discard</button>
+            <button class="btn btn-green" onclick="submitSaveWorkflow()"><i class="fas fa-save"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    // ═══════════════════════════════════════════════════
+    // Shared state
+    // ═══════════════════════════════════════════════════
+    let selectedWorkflow = "workflow.json";
+    let activeTab = "agent";
+    const logPanels = { agent: "agentLog", replay: "replayLog", record: "recordLog" };
+    const COMMANDER_HISTORY_KEY = 'commander_prompt_history_v1';
+    const COMMANDER_HISTORY_MAX = 12;
+    let commanderHistory = [];
+    let commanderHistoryIndex = -1;
+
+    // ═══════════════════════════════════════════════════
+    // Tab switching
+    // ═══════════════════════════════════════════════════
+    function switchTab(tab) {
+        activeTab = tab;
+        document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Status
+    // ═══════════════════════════════════════════════════
+    function setStatus(type, text) {
+        const dot = document.getElementById('statusDot');
+        dot.className = 'status-dot ' + type;
+        document.getElementById('statusLabel').textContent = text;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Logging
+    // ═══════════════════════════════════════════════════
+    function getTimestamp() {
+        return new Date().toLocaleTimeString('en-US', { hour12: false });
+    }
+
+    function badgeClass(type) {
+        const map = { SYSTEM:'badge-SYSTEM', SUCCESS:'badge-SUCCESS', ERROR:'badge-ERROR',
+                      WARNING:'badge-WARNING', USER:'badge-USER', AI:'badge-AI' };
+        return map[type] || 'badge-SYSTEM';
+    }
+
+    function logTo(panelId, msg, type = 'SYSTEM') {
+        const container = document.getElementById(panelId);
+        if (!container) return;
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        const shortType = { SYSTEM:'SYS', SUCCESS:'OK', ERROR:'ERR', WARNING:'WRN', USER:'USR', AI:'AI' }[type] || type.substring(0,3).toUpperCase();
+        entry.innerHTML = `<span class="log-ts">${getTimestamp()}</span>
+            <span class="log-badge ${badgeClass(type)}">${shortType}</span>
+            <span class="log-msg">${msg}</span>`;
+        container.appendChild(entry);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function resetLogPanel(panelId, message, type = 'SYSTEM') {
+        const container = document.getElementById(panelId);
+        if (!container) return;
+        container.innerHTML = '';
+        logTo(panelId, message, type);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Toast
+    // ═══════════════════════════════════════════════════
+    function showToast(msg, type = 'info') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `toast ${type} show`;
+        setTimeout(() => { t.className = `toast ${type}`; }, 3500);
+    }
+
+    function loadCommanderHistory() {
+        try {
+            const raw = localStorage.getItem(COMMANDER_HISTORY_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            commanderHistory = Array.isArray(parsed) ? parsed.filter(v => typeof v === 'string' && v.trim()) : [];
+        } catch (e) {
+            commanderHistory = [];
+        }
+        renderCommanderHistory();
+    }
+
+    function saveCommanderHistory() {
+        try {
+            localStorage.setItem(COMMANDER_HISTORY_KEY, JSON.stringify(commanderHistory.slice(0, COMMANDER_HISTORY_MAX)));
+        } catch (e) {}
+    }
+
+    function addCommanderHistory(command) {
+        const text = String(command || '').trim();
+        if (!text) return;
+        commanderHistory = [text, ...commanderHistory.filter(c => c !== text)].slice(0, COMMANDER_HISTORY_MAX);
+        commanderHistoryIndex = -1;
+        saveCommanderHistory();
+        renderCommanderHistory();
+    }
+
+    function applyCommanderHistory(command) {
+        const input = document.getElementById('commanderInput');
+        if (!input) return;
+        input.value = command;
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+    }
+
+    function renderCommanderHistory() {
+        const container = document.getElementById('commanderHistoryList');
+        if (!container) return;
+        container.innerHTML = '';
+        if (!commanderHistory.length) {
+            const empty = document.createElement('div');
+            empty.className = 'history-empty';
+            empty.textContent = 'No history yet. Sent commands will appear here.';
+            container.appendChild(empty);
+            return;
+        }
+
+        commanderHistory.slice(0, 8).forEach((cmd, idx) => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'history-chip';
+            chip.title = cmd;
+            chip.textContent = `${idx + 1}. ${cmd}`;
+            chip.onclick = () => applyCommanderHistory(cmd);
+            container.appendChild(chip);
+        });
+    }
+
+    function clearCommanderHistory() {
+        commanderHistory = [];
+        commanderHistoryIndex = -1;
+        saveCommanderHistory();
+        renderCommanderHistory();
+        showToast('Commander history cleared', 'info');
+    }
+
+    function navigateCommanderHistory(direction) {
+        if (!commanderHistory.length) return;
+        if (direction < 0) {
+            commanderHistoryIndex = Math.min(commanderHistoryIndex + 1, commanderHistory.length - 1);
+        } else {
+            commanderHistoryIndex = Math.max(commanderHistoryIndex - 1, -1);
+        }
+
+        const input = document.getElementById('commanderInput');
+        if (!input) return;
+        if (commanderHistoryIndex === -1) {
+            input.value = '';
+            return;
+        }
+        applyCommanderHistory(commanderHistory[commanderHistoryIndex]);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Override panel
+    // ═══════════════════════════════════════════════════
+    function toggleOverride(el) {
+        const panel = document.getElementById('overridePanel');
+        const chevron = document.getElementById('overrideChevron');
+        const open = panel.classList.toggle('open');
+        chevron.style.transform = open ? 'rotate(90deg)' : 'rotate(0)';
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Workflow list
+    // ═══════════════════════════════════════════════════
+    async function loadWorkflows() {
+        try {
+            const res = await fetch('/api/workflows');
+            const workflows = await res.json();
+            const select = document.getElementById('workflowSelect');
+            document.getElementById('wfCount').textContent = workflows.length;
+            select.innerHTML = '';
+            if (workflows.length === 0) {
+                select.innerHTML = '<option value="">No workflows yet — record one!</option>';
+                selectedWorkflow = '';
+            } else {
+                if (!workflows.includes(selectedWorkflow)) selectedWorkflow = workflows[0];
+                workflows.forEach(wf => {
+                    const opt = document.createElement('option');
+                    opt.value = wf;
+                    opt.textContent = wf.replace('.json', '');
+                    opt.selected = (wf === selectedWorkflow);
+                    select.appendChild(opt);
+                });
+            }
+            if (window.jQuery) {
+                window.jQuery('#workflowSelect').trigger('chosen:updated');
+            }
+        } catch (e) {
+            showToast('Error loading workflows', 'error');
+        }
+    }
+
+    async function deleteWorkflow(name) {
+        const fd = new FormData();
+        fd.append('name', name);
+        await fetch('/api/workflow/delete', { method: 'POST', body: fd });
+        showToast(`Deleted ${name}`, 'info');
+        loadWorkflows();
+    }
+
+    async function renameWorkflow(oldName) {
+        const currentBase = String(oldName || '').replace(/\.json$/i, '');
+        const entered = prompt('Rename workflow to:', currentBase);
+        if (entered === null) return; // user cancelled
+
+        const nextBase = String(entered || '').trim();
+        if (!nextBase) {
+            showToast('Workflow name cannot be empty', 'error');
+            return;
+        }
+
+        const nextName = nextBase.endsWith('.json') ? nextBase : `${nextBase}.json`;
+        if (nextName.toLowerCase() === String(oldName).toLowerCase()) {
+            showToast('Name is unchanged', 'info');
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append('old_name', oldName);
+        fd.append('new_name', nextName);
+        fd.append('overwrite', 'false');
+
+        try {
+            const res = await fetch('/api/workflow/rename', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!res.ok || data.status === 'error') {
+                showToast(data.message || 'Rename failed', 'error');
+                return;
+            }
+            selectedWorkflow = nextName;
+            showToast(data.message || `Renamed to ${nextName}`, 'success');
+            loadWorkflows();
+        } catch (e) {
+            showToast('Rename request failed', 'error');
+        }
+    }
+
+    async function compactWorkflow() {
+        const fd = new FormData();
+        fd.append('name', selectedWorkflow);
+        const res = await fetch('/api/workflow/compact', { method: 'POST', body: fd });
+        const data = await res.json();
+        logTo('replayLog', data.message, data.status === 'success' ? 'SUCCESS' : 'ERROR');
+        showToast(data.message, data.status === 'success' ? 'success' : 'error');
+    }
+
+    // ═══════════════════════════════════════════════════
+    // AUTONOMOUS AGENT
+    // ═══════════════════════════════════════════════════
+    async function runAgent() {
+        const url = document.getElementById('targetUrl').value.trim();
+        if (!url) { showToast('Please enter a target URL', 'error'); return; }
+
+        const commanderText = (document.getElementById('commanderInput')?.value || '').trim();
+        if (commanderText) {
+            logTo('agentLog', 'Using Agent Commander because a command was entered.', 'SYSTEM');
+            return runCommander();
+        }
+
+        let overrides = {};
+        const raw = document.getElementById('overrideData').value.trim();
+        if (raw) {
+            try { overrides = JSON.parse(raw); }
+            catch(e) { showToast('Invalid JSON in overrides field', 'error'); return; }
+        }
+
+        if (/benefit-test\.com\/fbmc/i.test(url) && !String(overrides.group_name || overrides.group || '').trim()) {
+            showToast('FBMC requires a group target. Enter a command like "create an Enrolment under group name Cairn Industries" or add {"group_name":"Cairn Industries"} in overrides.', 'error');
+            return;
+        }
+
+        setStatus('active', 'Agent Running...');
+        document.getElementById('agentRunBtn').disabled = true;
+        document.getElementById('statPages').textContent = '…';
+        document.getElementById('statFilled').textContent = '…';
+        document.getElementById('statErrors').textContent = '…';
+        document.getElementById('statStatus').textContent = 'Running';
+        document.getElementById('statStatus').style.color = 'var(--accent-blue)';
+
+        document.getElementById('agentLog').innerHTML = '';
+        logTo('agentLog', `🚀 Agent starting on: ${url}`, 'USER');
+
+        const fd = new FormData();
+        fd.append('url', url);
+        fd.append('override_data', JSON.stringify(overrides));
+
+        try {
+            const res = await fetch('/api/agent/run', { method: 'POST', body: fd });
+            const data = await res.json();
+            logTo('agentLog', data.message, 'SYSTEM');
+        } catch(e) {
+            logTo('agentLog', 'Failed to start agent: ' + e, 'ERROR');
+            setStatus('error', 'Agent Failed');
+            document.getElementById('agentRunBtn').disabled = false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // REPLAY
+    // ═══════════════════════════════════════════════════
+    async function runCommander() {
+        const input = document.getElementById('commanderInput');
+        const command = (input?.value || '').trim();
+        const url = document.getElementById('targetUrl').value.trim();
+        const panelId = logPanels[activeTab] || 'agentLog';
+        const isAgentMode = activeTab === 'agent';
+
+        if (!command) {
+            showToast('Please enter a command', 'error');
+            return;
+        }
+        if (!url) {
+            showToast('Please enter a target URL', 'error');
+            return;
+        }
+
+        logTo(panelId, `🧠 Commander: ${command}`, 'USER');
+        addCommanderHistory(command);
+        setStatus('active', 'Commander Running...');
+
+        const fd = new FormData();
+        fd.append('command', command);
+        fd.append('url', url);
+        if (!isAgentMode) {
+            fd.append('workflow', selectedWorkflow || 'workflow.json');
+        }
+
+        const endpoint = isAgentMode ? '/api/agent/command' : '/api/chat';
+
+        try {
+            const res = await fetch(endpoint, { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!res.ok || data.status === 'error') {
+                logTo(panelId, data.message || 'Commander request failed', 'ERROR');
+                showToast(data.message || 'Commander request failed', 'error');
+                setStatus('error', 'Commander Failed');
+                return;
+            }
+
+            logTo(panelId, data.message || 'Commander started', 'AI');
+            showToast('Commander started', 'success');
+            input.value = '';
+        } catch (e) {
+            logTo(panelId, 'Commander error: ' + e, 'ERROR');
+            showToast('Commander request failed', 'error');
+            setStatus('error', 'Commander Failed');
+        }
+    }
+
+    async function replayWorkflow() {
+        const url = document.getElementById('targetUrl').value.trim();
+        if (!url) { showToast('Please enter a target URL', 'error'); return; }
+        setStatus('active', 'Replaying...');
+        logTo('replayLog', `▶ Replaying '${selectedWorkflow}' on ${url}`, 'USER');
+        const fd = new FormData();
+        fd.append('url', url);
+        fd.append('workflow', selectedWorkflow);
+        try {
+            const res = await fetch('/api/replay', { method: 'POST', body: fd });
+            const data = await res.json();
+            logTo('replayLog', data.message || 'Replay started', data.status === 'started' ? 'SYSTEM' : 'SUCCESS');
+        } catch(e) {
+            logTo('replayLog', 'Replay failed: ' + e, 'ERROR');
+            setStatus('error', 'Replay Failed');
+        }
+    }
+
+    async function clearReplayLogs() {
+        if (!confirm('Clear replay logs? This will clear the shared run log on the server.')) return;
+        try {
+            const res = await fetch('/api/logs/clear', { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok || data.status !== 'success') {
+                showToast(data.message || 'Failed to clear replay logs', 'error');
+                return;
+            }
+            resetLogPanel('replayLog', 'Replay logs cleared. Select a workflow to replay.', 'SYSTEM');
+            showToast('Replay logs cleared', 'success');
+        } catch (e) {
+            showToast('Failed to clear replay logs', 'error');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // RECORD
+    // ═══════════════════════════════════════════════════
+    async function startRecording() {
+        const url = document.getElementById('targetUrl').value.trim();
+        if (!url) { showToast('Please enter a target URL', 'error'); return; }
+        setStatus('warn', 'Recording Active');
+        document.getElementById('recordBtn').className = 'btn btn-red';
+        document.getElementById('recordBtn').innerHTML = '<i class="fas fa-stop"></i> Stop Recording';
+        document.getElementById('recordBtn').onclick = stopAll;
+        logTo('recordLog', `● Recording started on ${url}`, 'WARNING');
+        const fd = new FormData();
+        fd.append('url', url);
+        await fetch('/api/record', { method: 'POST', body: fd });
+    }
+
+    // ═══════════════════════════════════════════════════
+    // STOP ALL
+    // ═══════════════════════════════════════════════════
+    async function stopAll() {
+        try {
+            await fetch('/api/stop', { method: 'POST' });
+            setStatus('error', 'Stopping...');
+            showToast('Stop signal sent', 'info');
+            setTimeout(() => {
+                setStatus('idle', 'System Idle');
+                document.getElementById('agentRunBtn').disabled = false;
+                resetRecordBtn();
+            }, 3000);
+        } catch(e) {}
+    }
+
+    function resetRecordBtn() {
+        const btn = document.getElementById('recordBtn');
+        btn.className = 'btn btn-amber';
+        btn.innerHTML = '<i class="fas fa-circle" style="color:#fca5a5;"></i> Start Recording';
+        btn.onclick = startRecording;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Save Modal
+    // ═══════════════════════════════════════════════════
+    function promptSaveWorkflow() {
+        document.getElementById('saveModal').style.display = 'flex';
+        document.getElementById('workflowNameInput').value = 'my_workflow';
+        document.getElementById('workflowNameInput').focus();
+    }
+
+    function closeSaveModal() {
+        document.getElementById('saveModal').style.display = 'none';
+        logTo('recordLog', 'Recording discarded.', 'WARNING');
+        resetRecordBtn();
+        setStatus('idle', 'System Idle');
+    }
+
+    function formatMissingFieldForAudit(field) {
+        if (!field || typeof field !== 'object') return '(unnamed field)';
+        return field.display || field.label || field.id || field.name || field.placeholder || '(unnamed field)';
+    }
+
+    async function submitSaveWorkflow(forceSave = false) {
+        const name = document.getElementById('workflowNameInput').value.trim() || 'workflow';
+        const fd = new FormData();
+        fd.append('name', name);
+        if (forceSave) fd.append('force_save', 'true');
+
+        const res = await fetch('/api/workflow/save', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.status === 'warning') {
+            const missing = Array.isArray(data.missing_fields) ? data.missing_fields : [];
+            const preview = missing.slice(0, 12).map(formatMissingFieldForAudit);
+            const headline = data.message || 'Recorder quality audit warning';
+
+            logTo('recordLog', headline, 'WARNING');
+            if (preview.length) {
+                logTo('recordLog', `Missing fields: ${preview.join(', ')}`, 'WARNING');
+            }
+
+            const total = Number(data.missing_count || preview.length || 0);
+            const requiredMissing = Number(data.required_missing_count || 0);
+            const previewText = preview.length
+                ? `\n\nExamples:\n- ${preview.join('\n- ')}`
+                : '';
+            const requiredText = requiredMissing > 0
+                ? `\nRequired missing fields: ${requiredMissing}`
+                : '';
+
+            const proceed = confirm(
+                `${headline}\nTotal missing fields: ${total}${requiredText}${previewText}\n\nPress OK to save anyway, or Cancel to re-record before saving.`
+            );
+            if (proceed) {
+                return submitSaveWorkflow(true);
+            }
+
+            showToast('Save paused. Re-record to capture missing fields.', 'warning');
+            return;
+        }
+
+        logTo('recordLog', data.message, data.status === 'success' ? 'SUCCESS' : 'ERROR');
+        if (data.status !== 'success') {
+            showToast(data.message || 'Save failed', 'error');
+            return;
+        }
+
+        showToast(`Saved as ${name}.json`, 'success');
+        document.getElementById('saveModal').style.display = 'none';
+        resetRecordBtn();
+        setStatus('idle', 'System Idle');
+        loadWorkflows();
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Log polling
+    // ═══════════════════════════════════════════════════
+    let agentRunning = false;
+    let runLogStream = null;
+    let runLogReconnectTimer = null;
+
+    function handleRunLogEntry(entry) {
+        if (!entry || !entry.msg) return;
+
+        if (entry.type === 'COMMAND' && entry.msg === 'RECORDING_FINISHED') {
+            promptSaveWorkflow();
+            return;
+        }
+
+        logTo(logPanels[activeTab] || 'agentLog', entry.msg, entry.type);
+
+        const msg = entry.msg || '';
+        if (msg.includes('Agent finished') || msg.includes('Replay finished') ||
+            msg.includes('stopped') || msg.includes('Recording completed')) {
+            setStatus('idle', 'System Idle');
+            document.getElementById('agentRunBtn').disabled = false;
+            agentRunning = false;
+        } else if (msg.includes('Agent starting') || msg.includes('Running') ||
+                   msg.includes('Replaying') || msg.includes('Recording')) {
+            agentRunning = true;
+        }
+
+        if (msg.includes('🏁 Agent finished') || msg.includes('agent finished')) {
+            pollAgentStatus();
+        }
+    }
+
+    function startRunLogStream() {
+        if (!window.EventSource) return;
+
+        if (runLogStream) {
+            runLogStream.close();
+            runLogStream = null;
+        }
+        if (runLogReconnectTimer) {
+            clearTimeout(runLogReconnectTimer);
+            runLogReconnectTimer = null;
+        }
+
+        const es = new EventSource('/api/logs/events');
+        runLogStream = es;
+
+        es.onmessage = (ev) => {
+            try {
+                const payload = JSON.parse(ev.data);
+                const entries = Array.isArray(payload?.events) ? payload.events : [];
+                entries.forEach(handleRunLogEntry);
+            } catch (e) {}
+        };
+
+        es.onerror = () => {
+            if (runLogStream) {
+                runLogStream.close();
+                runLogStream = null;
+            }
+            if (!runLogReconnectTimer) {
+                runLogReconnectTimer = setTimeout(() => {
+                    runLogReconnectTimer = null;
+                    startRunLogStream();
+                }, 3000);
+            }
+        };
+    }
+
+    async function pollAgentStatus() {
+        try {
+            const res = await fetch('/api/agent/status');
+            const data = await res.json();
+            if (data && data.status) {
+                document.getElementById('statPages').textContent = data.pages_processed ?? '—';
+                document.getElementById('statFilled').textContent = data.fields_filled ?? '—';
+                document.getElementById('statErrors').textContent = (data.errors || []).length;
+                const st = data.status;
+                document.getElementById('statStatus').textContent = st.charAt(0).toUpperCase() + st.slice(1);
+                document.getElementById('statStatus').style.color =
+                    st === 'success' ? 'var(--accent-green)' :
+                    st === 'partial' ? 'var(--accent-amber)' : 'var(--accent-red)';
+                setStatus(st === 'success' ? 'idle' : st === 'failed' ? 'error' : 'warn',
+                          st === 'success' ? 'Agent Done ✓' : st === 'partial' ? 'Partial Success' : 'Agent Failed');
+                document.getElementById('agentRunBtn').disabled = false;
+                if (st === 'success') showToast('🎉 Agent completed successfully!', 'success');
+                else if (st === 'partial') showToast('Agent finished (partial)', 'info');
+                else showToast('Agent run failed', 'error');
+            }
+        } catch(e) {}
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCommanderHistory();
+        startRunLogStream();
+
+        const commanderInput = document.getElementById('commanderInput');
+        if (commanderInput) {
+            commanderInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    runCommander();
+                    return;
+                }
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    navigateCommanderHistory(-1);
+                    return;
+                }
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    navigateCommanderHistory(1);
+                }
+            });
+        }
+
+        // Initialize Chosen.js on all .chosen-select elements
+        if (window.jQuery) {
+            window.jQuery('.chosen-select').chosen({
+                disable_search_threshold: 5,
+                no_results_text: 'No workflow found:',
+                width: '100%'
+            });
+            window.jQuery('#workflowSelect').on('change', function () {
+                selectedWorkflow = this.value;
+            });
+        }
+    });
+
+    loadWorkflows();
+</script>
+
+</body>
+</html>

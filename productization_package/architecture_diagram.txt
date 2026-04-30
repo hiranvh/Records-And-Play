@@ -1,0 +1,67 @@
+QA Replay Platform - Architecture Diagram (Text)
+
++---------------------------+          +------------------------------------+
+| QA Engineer / Tester      |          | Product / QA Leads                 |
+| - Record workflow         |          | - Review reports and trends        |
+| - Replay in chosen mode   |          | - Approve release readiness        |
++-------------+-------------+          +----------------+-------------------+
+              |                                         |
+              v                                         v
++--------------------------------------------------------------------------+
+|                       Dark Theme Web UI (FastAPI Templates)              |
+|  index.html: record/replay controls, mode selector, analytics cards      |
+|  logs.html: live execution logs                                           |
+|  dashboard.html: run history, report downloads, summary analytics         |
++-----------------------------------+--------------------------------------+
+                                    |
+                                    v
++--------------------------------------------------------------------------+
+|                              FastAPI Route Layer                          |
+|  - /api/record            - /api/replay                                  |
+|  - /api/workflow/*        - /api/runs/history                             |
+|  - /api/reports*          - /api/dashboard/summary                        |
+|  - /api/logs*             - /api/agent/*                                  |
++-----------------------------------+--------------------------------------+
+                                    |
+                +-------------------+-------------------+
+                |                                       |
+                v                                       v
++-------------------------------+         +----------------------------------+
+| Recorder Engine               |         | Playback Engine                  |
+| - Capture steps               |         | - Execute recorded steps         |
+| - Persist workflow JSON       |         | - Detect UI drift               |
+|                               |         | - Missing/new field detection   |
++---------------+---------------+         | - Self-healing selectors        |
+                |                         | - Lenient/Standard/Strict modes |
+                v                         +---------------+------------------+
++-------------------------------+                         |
+| workflows/*.json              |                         v
+| (source of truth for replay)  |         +----------------------------------+
++-------------------------------+         | QA Result and Metrics Builder    |
+                                          | - discrepancy_counts             |
+                                          | - qa_summary / qa_outcome        |
+                                          | - trend_ready payload            |
+                                          +---------------+------------------+
+                                                          |
+                                                          v
+                                          +----------------------------------+
+                                          | Report Generator                 |
+                                          | - Excel report (.xlsx)           |
+                                          | - JSON report (.json)            |
+                                          +---------------+------------------+
+                                                          |
+                                                          v
+                                          +----------------------------------+
+                                          | reports/                         |
+                                          | - downloadable artifacts         |
+                                          | - dashboard and replay UI links  |
+                                          +----------------------------------+
+
+Operational Data Flow
+
+1) Record workflow -> save JSON
+2) Replay workflow in selected mode
+3) Collect discrepancies and recovery stats
+4) Generate Excel + JSON artifacts
+5) Surface analytics cards + run history + report downloads in UI
+6) Track trend-ready metrics across runs

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record &amp; Play — Live Log Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base:      #0a0d14;
+            --bg-panel:     #111827;
+            --bg-card:      #1a2235;
+            --bg-input:     #0d1117;
+            --border:       #1e2d45;
+            --text-primary: #e2e8f0;
+            --text-muted:   #64748b;
+            --text-dim:     #94a3b8;
+            --accent-blue:  #3b82f6;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-red:   #ef4444;
+            --accent-violet:#8b5cf6;
+            --accent-cyan:  #06b6d4;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); overflow: hidden; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1e2d45; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2d4070; }
+
+        .layout { display: flex; flex-direction: column; height: 100vh; }
+
+        /* ─── Header ─── */
+        .header {
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px 20px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .header-icon { font-size: 22px; color: var(--accent-blue); }
+        .header-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+        .header-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+        .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+        .conn-wrap { display: flex; align-items: center; gap: 6px; }
+        .conn-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .conn-dot.connected    { background: var(--accent-green); box-shadow: 0 0 6px rgba(16,185,129,0.7); }
+        .conn-dot.disconnected { background: var(--accent-red); }
+        .conn-dot.connecting   { background: var(--accent-amber); animation: pulse 1s ease-in-out infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .conn-label { font-size: 11px; color: var(--text-muted); }
+
+        /* ─── Stats bar ─── */
+        .stats-bar { display: flex; gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .stat { flex: 1; padding: 8px 14px; background: var(--bg-panel); }
+        .stat-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
+        .stat-val { font-size: 18px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+        .c-blue   { color: var(--accent-blue); }
+        .c-red    { color: var(--accent-red); }
+        .c-amber  { color: var(--accent-amber); }
+        .c-green  { color: var(--accent-green); }
+        .c-violet { color: var(--accent-violet); }
+
+        /* ─── Toolbar ─── */
+        .toolbar {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            padding: 9px 16px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .filter-group { display: flex; gap: 4px; }
+        .filter-btn {
+            padding: 5px 11px; border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 10px; font-weight: 700; cursor: pointer;
+            letter-spacing: 0.04em; color: var(--text-muted);
+            background: var(--bg-card); transition: all 0.15s;
+        }
+        .filter-btn:hover { border-color: var(--accent-blue); color: var(--text-dim); }
+        .filter-btn.active                { border-color: var(--accent-blue);   color: var(--accent-blue);   background: rgba(59,130,246,0.1); }
+        .filter-btn.f-sys.active          { border-color: #64748b;              color: #64748b;              background: rgba(100,116,139,0.1); }
+        .filter-btn.f-ok.active           { border-color: var(--accent-green);  color: var(--accent-green);  background: rgba(16,185,129,0.1); }
+        .filter-btn.f-err.active          { border-color: var(--accent-red);    color: var(--accent-red);    background: rgba(239,68,68,0.1); }
+        .filter-btn.f-wrn.active          { border-color: var(--accent-amber);  color: var(--accent-amber);  background: rgba(245,158,11,0.1); }
+        .filter-btn.f-usr.active          { border-color: var(--accent-blue);   color: var(--accent-blue);   background: rgba(59,130,246,0.1); }
+        .filter-btn.f-ai.active           { border-color: var(--accent-violet); color: var(--accent-violet); background: rgba(139,92,246,0.1); }
+        .search-wrap { flex: 1; min-width: 180px; position: relative; }
+        .search-input {
+            width: 100%; padding: 6px 30px 6px 10px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: 6px; color: var(--text-primary); font-size: 12px; outline: none;
+        }
+        .search-input:focus { border-color: var(--accent-blue); }
+        .search-input::placeholder { color: var(--text-muted); }
+        .search-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--text-muted); cursor: pointer; font-size: 11px; }
+        .scroll-toggle {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 11px; color: var(--text-muted); cursor: pointer;
+            padding: 6px 10px; border-radius: 6px;
+            border: 1px solid var(--border); background: var(--bg-card);
+            user-select: none;
+        }
+        .scroll-toggle.on { border-color: var(--accent-green); color: var(--accent-green); }
+        .scroll-toggle input[type=checkbox] { accent-color: var(--accent-green); cursor: pointer; }
+
+        /* ─── Log area ─── */
+        .log-area {
+            flex: 1; overflow-y: auto;
+            padding: 8px 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1;
+        }
+        .log-entry {
+            display: flex; gap: 10px; align-items: flex-start;
+            padding: 4px 8px; border-radius: 4px; margin-bottom: 1px;
+            transition: background 0.1s;
+        }
+        .log-entry:hover { background: rgba(255,255,255,0.025); }
+        .log-ts   { color: var(--text-muted); flex-shrink: 0; font-size: 10px; padding-top: 2px; white-space: nowrap; }
+        .log-badge {
+            flex-shrink: 0; font-size: 9px; font-weight: 700;
+            padding: 2px 6px; border-radius: 3px;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .log-msg { flex: 1; white-space: pre-wrap; word-break: break-word; line-height: 1.65; }
+
+        .log-entry.t-SYSTEM  .log-msg { color: var(--text-dim); }
+        .log-entry.t-SUCCESS .log-msg { color: #d1fae5; }
+        .log-entry.t-ERROR   .log-msg { color: #fee2e2; }
+        .log-entry.t-WARNING .log-msg { color: #fef3c7; }
+        .log-entry.t-USER    .log-msg { color: #dbeafe; }
+        .log-entry.t-AI      .log-msg { color: #ede9fe; }
+
+        .badge-SYSTEM  { background: rgba(100,116,139,0.2); color: #64748b; }
+        .badge-SUCCESS { background: rgba(16,185,129,0.15); color: #4ade80; }
+        .badge-ERROR   { background: rgba(239,68,68,0.15);  color: #f87171; }
+        .badge-WARNING { background: rgba(245,158,11,0.15); color: #fbbf24; }
+        .badge-USER    { background: rgba(59,130,246,0.15); color: #60a5fa; }
+        .badge-AI      { background: rgba(139,92,246,0.15); color: #a78bfa; }
+
+        .run-banner {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; margin: 10px 0; border-radius: 7px;
+            background: linear-gradient(135deg, rgba(37,99,235,0.1), rgba(139,92,246,0.08));
+            border: 1px solid rgba(59,130,246,0.3);
+            font-size: 11px; font-weight: 600; color: var(--accent-blue);
+            font-family: 'Inter', sans-serif;
+        }
+        .run-banner-line { flex: 1; height: 1px; background: rgba(59,130,246,0.25); }
+
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; height: 250px; gap: 10px;
+            color: var(--text-muted); font-size: 13px;
+            font-family: 'Inter', sans-serif;
+        }
+        .empty-state i { font-size: 34px; opacity: 0.25; }
+
+        /* ─── Action bar ─── */
+        .action-bar {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            padding: 10px 16px;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 7px;
+            font-size: 12px; font-weight: 600; border: none; cursor: pointer;
+            transition: all 0.18s; white-space: nowrap;
+        }
+        .btn-ghost  { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-dim); }
+        .btn-ghost:hover { border-color: var(--accent-blue); color: var(--text-primary); }
+        .btn-red    { background: rgba(239,68,68,0.15);  border: 1px solid rgba(239,68,68,0.35);  color: #f87171; }
+        .btn-red:hover   { background: rgba(239,68,68,0.25); }
+        .btn-green  { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.35); color: #4ade80; }
+        .btn-green:hover { background: rgba(16,185,129,0.25); }
+        .btn-blue   { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.35); color: #60a5fa; }
+        .btn-blue:hover  { background: rgba(59,130,246,0.25); }
+        .file-info { margin-left: auto; font-size: 10px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+
+        /* ─── Toast ─── */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            padding: 11px 18px; border-radius: 9px;
+            font-size: 12px; font-weight: 600; z-index: 9999;
+            opacity: 0; transform: translateY(8px);
+            transition: all 0.3s; pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background: rgba(16,185,129,0.92); color: #fff; }
+        .toast.error   { background: rgba(239,68,68,0.92);  color: #fff; }
+        .toast.info    { background: rgba(59,130,246,0.92); color: #fff; }
+    </style>
+</head>
+<body>
+<div class="layout">
+
+    <!-- ═══ Header ═══ -->
+    <div class="header">
+        <i class="fas fa-scroll header-icon"></i>
+        <div>
+            <div class="header-title">
+                <i class="fas fa-robot" style="color:var(--accent-violet);margin-right:6px;font-size:12px;"></i>
+                Record &amp; Play — Live Log Monitor
+            </div>
+            <div class="header-sub">recordandplay.logs &nbsp;·&nbsp; Server-sent events stream &nbsp;·&nbsp; Resets on each new run</div>
+        </div>
+        <div class="header-right">
+            <div class="conn-wrap">
+                <div class="conn-dot connecting" id="connDot"></div>
+                <span class="conn-label" id="connLabel">Connecting…</span>
+            </div>
+            <a href="/record-and-play" style="text-decoration:none;">
+                <button class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back to App</button>
+            </a>
+        </div>
+    </div>
+
+    <!-- ═══ Stats bar ═══ -->
+    <div class="stats-bar">
+        <div class="stat">
+            <div class="stat-label">Total Entries</div>
+            <div class="stat-val c-blue" id="sTotal">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Errors</div>
+            <div class="stat-val c-red" id="sErrors">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Warnings</div>
+            <div class="stat-val c-amber" id="sWarns">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Success</div>
+            <div class="stat-val c-green" id="sSuccess">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">AI Events</div>
+            <div class="stat-val c-violet" id="sAI">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Current Run</div>
+            <div class="stat-val" id="sRun" style="font-size:13px;color:var(--text-dim);">—</div>
+        </div>
+    </div>
+
+    <!-- ═══ Toolbar ═══ -->
+    <div class="toolbar">
+        <div class="filter-group">
+            <button class="filter-btn active"  data-filter="ALL"     onclick="setFilter('ALL',this)">ALL</button>
+            <button class="filter-btn f-sys"   data-filter="SYSTEM"  onclick="setFilter('SYSTEM',this)">SYS</button>
+            <button class="filter-btn f-ok"    data-filter="SUCCESS" onclick="setFilter('SUCCESS',this)">OK</button>
+            <button class="filter-btn f-err"   data-filter="ERROR"   onclick="setFilter('ERROR',this)">ERR</button>
+            <button class="filter-btn f-wrn"   data-filter="WARNING" onclick="setFilter('WARNING',this)">WRN</button>
+            <button class="filter-btn f-usr"   data-filter="USER"    onclick="setFilter('USER',this)">USR</button>
+            <button class="filter-btn f-ai"    data-filter="AI"      onclick="setFilter('AI',this)">AI</button>
+        </div>
+        <div class="search-wrap">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search logs…" oninput="applyFilters()">
+            <span class="search-clear" onclick="clearSearch()"><i class="fas fa-times"></i></span>
+        </div>
+        <label class="scroll-toggle on" id="scrollToggle" title="Auto-scroll to new entries">
+            <input type="checkbox" id="autoScrollChk" checked onchange="toggleAutoScroll()">
+            <i class="fas fa-arrow-down"></i> Auto-scroll
+        </label>
+    </div>
+
+    <!-- ═══ Log area ═══ -->
+    <div class="log-area" id="logArea">
+        <div class="empty-state" id="emptyState">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Waiting for log data…</span>
+        </div>
+    </div>
+
+    <!-- ═══ Action bar ═══ -->
+    <div class="action-bar">
+        <button class="btn btn-red"   onclick="clearLogs()">   <i class="fas fa-trash"></i>    Clear Logs</button>
+        <button class="btn btn-green" onclick="downloadLogs()"><i class="fas fa-download"></i> Download</button>
+        <button class="btn btn-blue"  onclick="scrollToBottom()"><i class="fas fa-arrow-down"></i> Jump to Bottom</button>
+        <div class="file-info" id="fileInfo">recordandplay.logs</div>
+    </div>
+
+</div><!-- end layout -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+    // ═══════════════════════════════════════════════════
+    // State
+    // ═══════════════════════════════════════════════════
+    let allEntries  = [];
+    let activeFilter = 'ALL';
+    let autoScroll   = true;
+    let runCount     = 0;
+    let stats = { total: 0, errors: 0, warns: 0, success: 0, ai: 0 };
+
+    // ═══════════════════════════════════════════════════
+    // Log line parser  →  [YYYY-MM-DD HH:MM:SS] [TYPE] msg
+    // ═══════════════════════════════════════════════════
+    const LOG_RE = /^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] \[(\w+)\] (.+)$/;
+
+    function parseLine(line) {
+        const m = line.match(LOG_RE);
+        if (!m) return null;
+        const parts = m[1].split(' ');
+        return { ts: parts[1], date: parts[0], type: m[2].toUpperCase(), msg: m[3] };
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Helpers
+    // ═══════════════════════════════════════════════════
+    function escHtml(s) {
+        return String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    const SHORT_TYPE = { SYSTEM:'SYS', SUCCESS:'OK', ERROR:'ERR', WARNING:'WRN', USER:'USR', AI:'AI' };
+
+    function makeEntry(e) {
+        const div = document.createElement('div');
+        div.className = `log-entry t-${e.type}`;
+        div.dataset.type = e.type;
+        div.dataset.msg  = e.msg.toLowerCase();
+        const short = SHORT_TYPE[e.type] || e.type.substring(0, 3);
+        div.innerHTML =
+            `<span class="log-ts">${escHtml(e.ts)}</span>` +
+            `<span class="log-badge badge-${e.type}">${short}</span>` +
+            `<span class="log-msg">${escHtml(e.msg)}</span>`;
+        return div;
+    }
+
+    function makeBanner(label) {
+        const div = document.createElement('div');
+        div.className = 'run-banner';
+        div.innerHTML =
+            `<div class="run-banner-line"></div>` +
+            `<i class="fas fa-play-circle"></i>` +
+            `<span>${escHtml(label)}</span>` +
+            `<div class="run-banner-line"></div>`;
+        return div;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Append text block (bulk / append events)
+    // ═══════════════════════════════════════════════════
+    function appendLines(text) {
+        const logArea  = document.getElementById('logArea');
+        const emptyEl  = document.getElementById('emptyState');
+        const lines    = text.split('\n');
+        const frag     = document.createDocumentFragment();
+        let   added    = 0;
+
+        for (const raw of lines) {
+            const line = raw.trim();
+            if (!line) continue;
+
+            // RUN STARTED banner
+            if (line.includes('RUN STARTED')) {
+                runCount++;
+                const dt = (line.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/) || [''])[0];
+                frag.appendChild(makeBanner(`Run #${runCount}  ·  ${dt}`));
+                document.getElementById('sRun').textContent = `#${runCount}`;
+                added++;
+                continue;
+            }
+
+            const e = parseLine(line);
+            if (!e) continue;
+
+            allEntries.push(e);
+            stats.total++;
+            if (e.type === 'ERROR')   stats.errors++;
+            if (e.type === 'WARNING') stats.warns++;
+            if (e.type === 'SUCCESS') stats.success++;
+            if (e.type === 'AI')      stats.ai++;
+
+            if (matchesFilter(e)) {
+                frag.appendChild(makeEntry(e));
+                added++;
+            }
+        }
+
+        if (added > 0) {
+            if (emptyEl && emptyEl.parentNode) emptyEl.remove();
+            logArea.appendChild(frag);
+        }
+
+        updateStats();
+        if (added > 0 && autoScroll) scrollToBottom();
+    }
+
+    function matchesFilter(e) {
+        const search = document.getElementById('searchInput').value.toLowerCase().trim();
+        if (activeFilter !== 'ALL' && e.type !== activeFilter) return false;
+        if (search && !e.msg.toLowerCase().includes(search) && !e.ts.includes(search) && !e.date.includes(search)) return false;
+        return true;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Stats
+    // ═══════════════════════════════════════════════════
+    function updateStats() {
+        document.getElementById('sTotal').textContent   = stats.total;
+        document.getElementById('sErrors').textContent  = stats.errors;
+        document.getElementById('sWarns').textContent   = stats.warns;
+        document.getElementById('sSuccess').textContent = stats.success;
+        document.getElementById('sAI').textContent      = stats.ai;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Reset display (new run detected)
+    // ═══════════════════════════════════════════════════
+    function resetDisplay() {
+        allEntries = [];
+        runCount   = 0;
+        stats      = { total: 0, errors: 0, warns: 0, success: 0, ai: 0 };
+        const logArea = document.getElementById('logArea');
+        logArea.innerHTML =
+            '<div class="empty-state" id="emptyState">' +
+            '<i class="fas fa-sync fa-spin"></i>' +
+            '<span>New run starting…</span>' +
+            '</div>';
+        updateStats();
+        document.getElementById('sRun').textContent = '—';
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Filter + search
+    // ═══════════════════════════════════════════════════
+    function setFilter(filter, btn) {
+        activeFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        rebuildView();
+    }
+
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        applyFilters();
+    }
+
+    function applyFilters() { rebuildView(); }
+
+    function rebuildView() {
+        const logArea  = document.getElementById('logArea');
+        const filtered = allEntries.filter(matchesFilter);
+        logArea.innerHTML = '';
+        if (filtered.length === 0) {
+            logArea.innerHTML =
+                '<div class="empty-state" id="emptyState">' +
+                '<i class="fas fa-filter" style="font-size:28px;"></i>' +
+                '<span>No entries match the current filter.</span>' +
+                '</div>';
+            return;
+        }
+        const frag = document.createDocumentFragment();
+        for (const e of filtered) frag.appendChild(makeEntry(e));
+        logArea.appendChild(frag);
+        if (autoScroll) scrollToBottom();
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Scroll helpers
+    // ═══════════════════════════════════════════════════
+    function scrollToBottom() {
+        const a = document.getElementById('logArea');
+        a.scrollTop = a.scrollHeight;
+    }
+
+    function toggleAutoScroll() {
+        autoScroll = document.getElementById('autoScrollChk').checked;
+        document.getElementById('scrollToggle').classList.toggle('on', autoScroll);
+        if (autoScroll) scrollToBottom();
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Toast
+    // ═══════════════════════════════════════════════════
+    function showToast(msg, type = 'info') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `toast ${type} show`;
+        setTimeout(() => { t.className = `toast ${type}`; }, 3200);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Actions
+    // ═══════════════════════════════════════════════════
+    async function clearLogs() {
+        if (!confirm('Clear all logs? This will truncate recordandplay.logs on the server.')) return;
+        try {
+            const res = await fetch('/api/logs/clear', { method: 'POST' });
+            if (res.ok) {
+                resetDisplay();
+                showToast('Logs cleared — new run header written', 'success');
+            } else {
+                showToast('Failed to clear logs', 'error');
+            }
+        } catch (e) {
+            showToast('Error clearing logs', 'error');
+        }
+    }
+
+    function downloadLogs() {
+        window.open('/api/logs/download', '_blank');
+    }
+
+    // ═══════════════════════════════════════════════════
+    // SSE connection
+    // ═══════════════════════════════════════════════════
+    function setConnStatus(state) {
+        const dot   = document.getElementById('connDot');
+        const label = document.getElementById('connLabel');
+        dot.className = 'conn-dot ' + state;
+        if (state === 'connected') {
+            label.textContent = 'Connected';
+            label.style.color = 'var(--accent-green)';
+        } else if (state === 'disconnected') {
+            label.textContent = 'Disconnected — retrying…';
+            label.style.color = 'var(--accent-red)';
+        } else {
+            label.textContent = 'Connecting…';
+            label.style.color = 'var(--accent-amber)';
+        }
+    }
+
+    function connect() {
+        setConnStatus('connecting');
+        const es = new EventSource('/api/logs/stream');
+
+        es.onopen = () => setConnStatus('connected');
+
+        es.onmessage = (ev) => {
+            try {
+                const data = JSON.parse(ev.data);
+                if (data.type === 'reset') {
+                    resetDisplay();
+                } else if (data.type === 'bulk') {
+                    resetDisplay();
+                    appendLines(data.lines);
+                } else if (data.type === 'append') {
+                    appendLines(data.lines);
+                }
+            } catch (e) { /* ignore parse errors */ }
+        };
+
+        es.onerror = () => {
+            setConnStatus('disconnected');
+            es.close();
+            setTimeout(connect, 3000);   // reconnect after 3 s
+        };
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Init
+    // ═══════════════════════════════════════════════════
+    connect();
+
+    // Clock in file-info footer
+    function updateClock() {
+        document.getElementById('fileInfo').textContent =
+            'recordandplay.logs  ·  ' + new Date().toLocaleTimeString();
+    }
+    updateClock();
+    setInterval(updateClock, 5000);
+</script>
+</body>
+</html>

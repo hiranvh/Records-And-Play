@@ -1,0 +1,10 @@
+fastapi
+faker
+openpyxl
+pandas
+Pillow
+playwright
+python-multipart
+requests
+httpx
+uvicorn

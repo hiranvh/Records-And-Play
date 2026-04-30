@@ -1,0 +1,87 @@
+{
+    "schema_version": 2,
+    "recorded_at": 1777019922,
+    "url": "https://qa-ebenefits.benefit-test.com/fbmc",
+    "start_url": "https://qa-ebenefits.benefit-test.com/fbmc",
+    "steps": [
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "UserName",
+            "name": "UserName",
+            "label": "",
+            "text": "",
+            "value": "prodsupport",
+            "selector": "#UserName",
+            "input_type": "text",
+            "placeholder": ""
+        },
+        {
+            "type": "input",
+            "tag": "input",
+            "id": "Password",
+            "name": "Password",
+            "label": "",
+            "text": "",
+            "value": "Fbmc@dm1n$2016",
+            "selector": "#Password",
+            "input_type": "password",
+            "placeholder": ""
+        },
+        {
+            "type": "click",
+            "tag": "button",
+            "id": "",
+            "name": "",
+            "label": "",
+            "text": "Login",
+            "value": "",
+            "selector": "button.btn.btn-block",
+            "input_type": "submit",
+            "placeholder": ""
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "id": "",
+            "name": "",
+            "label": "",
+            "text": "Cairn Industries",
+            "value": "",
+            "selector": "a.divRedirectGrid.name",
+            "input_type": "",
+            "placeholder": ""
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "id": "",
+            "name": "",
+            "label": "",
+            "text": "Employee Administration\n\nView, add and edit the Employee Information",
+            "value": "",
+            "selector": "a.divRedirect",
+            "input_type": "",
+            "placeholder": ""
+        },
+        {
+            "type": "click_link",
+            "tag": "a",
+            "id": "BtnAdd",
+            "name": "",
+            "label": "",
+            "text": "person_add",
+            "value": "",
+            "selector": "#BtnAdd",
+            "input_type": "",
+            "placeholder": ""
+        }
+    ],
+    "recording_metadata": {
+        "workflow_name": "workflow.json",
+        "url": "https://qa-ebenefits.benefit-test.com/fbmc",
+        "step_count": 6,
+        "duration": 53.303956747055054,
+        "captured_at": 1777019916
+    }
+}
